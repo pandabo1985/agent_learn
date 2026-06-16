@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 概念关系讲解</title>
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --sidebar-bg: #ffffff;
+    --content-bg: #ffffff;
+    --border: #e2e6ed;
+    --text: #2c3e50;
+    --text-muted: #7f8c9a;
+    --accent: #4f6ef7;
+    --accent-light: #eef1fe;
+    --accent-hover: #3a56e0;
+    --heading: #1a2540;
+    --code-bg: #f0f2f8;
+    --callout-bg: #eef1fe;
+    --callout-border: #4f6ef7;
+    --tag-bg: #e8ecfd;
+    --tag-text: #3a56e0;
+    --timeline-line: #c5cde8;
+    --shadow: 0 2px 12px rgba(79,110,247,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  #sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 0 40px;
+    box-shadow: var(--shadow);
+    z-index: 100;
+  }
+
+  #sidebar .logo {
+    padding: 0 20px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  #sidebar a {
+    display: block;
+    padding: 7px 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all .18s;
+  }
+  #sidebar a:hover { color: var(--accent); background: var(--accent-light); }
+  #sidebar a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: var(--accent-light);
+    font-weight: 600;
+  }
+
+  #main {
+    margin-left: 240px;
+    padding: 48px 52px;
+    max-width: 900px;
+    width: 100%;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--heading);
+    margin-bottom: 8px;
+  }
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 48px;
+  }
+
+  .section {
+    margin-bottom: 56px;
+    scroll-margin-top: 32px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  .sec-num {
+    font-weight: 900;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .section-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--heading);
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .chip {
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .03em;
+  }
+
+  .card {
+    background: var(--content-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 { font-size: 1rem; font-weight: 700; color: var(--heading); margin-bottom: 8px; }
+  .card p { font-size: 14px; color: var(--text); }
+
+  .callout {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--callout-border);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .callout strong { color: var(--accent); }
+
+  .hierarchy {
+    background: var(--content-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .hierarchy pre {
+    margin: 0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text-muted);
+    white-space: pre;
+    tab-size: 2;
+  }
+  .hierarchy .root { color: var(--accent); font-weight: 800; }
+  .hierarchy .method { color: #2d6a4f; font-weight: 700; }
+  .hierarchy .field { color: #2d6a4f; font-weight: 700; }
+  .hierarchy .note { color: var(--text-muted); font-style: italic; }
+
+  .timeline { position: relative; padding-left: 28px; margin: 16px 0; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--timeline-line);
+  }
+  .tl-item { position: relative; margin-bottom: 18px; }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -24px; top: 6px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .tl-item .year {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: .06em;
+    margin-bottom: 2px;
+  }
+  .tl-item p { font-size: 14px; color: var(--text); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 16px 0;
+    background: var(--content-bg);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  th {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: var(--accent-light); }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  @media (max-width: 768px) {
+    #sidebar { display: none; }
+    #main { margin-left: 0; padding: 24px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="logo">AI 概念地图</div>
+  <a href="#s1">01 总览层级</a>
+  <a href="#s2">02 机器学习 & NLP</a>
+  <a href="#s25">03 ML 与 DL</a>
+  <a href="#s3">04 深度学习家族</a>
+  <a href="#s4">05 RNN 系列</a>
+  <a href="#s5">06 Transformer</a>
+  <a href="#s6">07 LLM</a>
+  <a href="#s7">08 对比速查</a>
+</nav>
+
+<main id="main">
+  <h1>AI 概念关系 <span>全景讲解</span></h1>
+  <p class="subtitle">从机器学习到大语言模型 · 一图读懂层级、关系与演进</p>
+
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="sec-num">01</div>
+      <h2>总览：概念层级</h2>
+    </div>
+    <div class="hierarchy">
+<pre><span class="root">🤖 人工智能 AI</span>
+├─ <span class="method">机器学习 ML（用数据学习规律的方法体系）</span>
+│  └─ 深度学习 DL（多层神经网络）
+│     ├─ CNN（擅长图像 / 局部特征）
+│     ├─ RNN / LSTM / GRU（序列数据）
+│     └─ Transformer（训练时高度并行 + 自注意力）
+│
+└─ <span class="field">NLP（处理自然语言的应用方向）</span>
+   └─ 现代 NLP 常用 ML / DL / Transformer / LLM 实现
+
+<span class="note">注：NLP 是应用领域，不是机器学习的严格子集；只是现代 NLP 大量依赖机器学习。</span></pre>
+    </div>
+    <div class="callout"><strong>一句话：</strong>深度学习是一类方法，NLP 是语言处理方向，Transformer 是当前主流架构，LLM 是基于 Transformer 或其变体大规模训练出的模型类型。</div>
+  </section>
+
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="sec-num">02</div>
+      <h2>机器学习 & NLP 的关系</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">监督学习</span><span class="chip">无监督学习</span>
+      <span class="chip">文本分类</span><span class="chip">翻译</span><span class="chip">问答</span>
+    </div>
+    <div class="card">
+      <h3>机器学习（ML）</h3>
+      <p>让计算机从数据中自动学习规律，不需要完全手写规则。它是一个广义方法体系，包含决策树、SVM、神经网络等众多算法。</p>
+    </div>
+    <div class="card">
+      <h3>NLP 与 ML 的关系</h3>
+      <p>NLP（自然语言处理）是 AI 中处理人类语言的<strong>应用方向</strong>。早期 NLP 也使用规则和语言学方法；现代 NLP 的主流实现主要依赖 ML，尤其是深度学习、Transformer 和 LLM。</p>
+    </div>
+    <div class="callout"><strong>类比：</strong>ML 是一类“学习方法”，NLP 是“语言问题领域”；当用 ML 去解决翻译、摘要、问答等语言问题时，就形成了现代 NLP 的主流路线。</div>
+  </section>
+
+  <section class="section" id="s25">
+    <div class="section-header">
+      <div class="sec-num">03</div>
+      <h2>机器学习与深度学习的关系</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">从数据中学习</span><span class="chip">多层神经网络</span><span class="chip">特征学习</span>
+    </div>
+    <div class="card">
+      <h3>一句话理解</h3>
+      <p><strong>深度学习是机器学习的一种方法</strong>，而且是目前最重要的一类机器学习方法。机器学习是大类，深度学习是其中基于多层神经网络的分支。</p>
+    </div>
+    <div class="hierarchy">
+<pre><span class="root">人工智能 AI</span>
+└─ <span class="method">机器学习 ML：让机器从数据中学习规律</span>
+   ├─ 传统机器学习：线性回归 / 决策树 / 随机森林 / SVM / KNN
+   └─ <span class="field">深度学习 DL：用多层神经网络进行机器学习</span>
+      ├─ CNN
+      ├─ RNN / LSTM / GRU
+      └─ Transformer / 主流 LLM</pre>
+    </div>
+    <table>
+      <tr><th>对比</th><th>机器学习 ML</th><th>深度学习 DL</th></tr>
+      <tr><td>范围</td><td>更大的方法体系</td><td>机器学习的一个子集</td></tr>
+      <tr><td>核心方法</td><td>多种算法：决策树、SVM、随机森林、回归等</td><td>多层神经网络</td></tr>
+      <tr><td>特征处理</td><td>经常需要人工设计特征</td><td>通常自动从数据中学习特征</td></tr>
+      <tr><td>数据与算力</td><td>小数据也常可使用，算力要求相对低</td><td>通常需要更多数据和更强算力</td></tr>
+      <tr><td>擅长任务</td><td>表格数据、分类、预测、简单决策</td><td>图像、语音、自然语言、生成式 AI</td></tr>
+    </table>
+    <div class="callout"><strong>直观例子：</strong>判断一张图片是不是猫。传统机器学习通常需要人先设计“耳朵、眼睛、毛发”等特征；深度学习可以直接从大量图片中自动学习“边缘 → 纹理 → 局部结构 → 猫脸 → 猫”的层级特征。</div>
+    <div class="callout"><strong>最简单总结：</strong>机器学习 = 让机器从数据中学习；深度学习 = 用很多层神经网络来做机器学习。所以，深度学习属于机器学习。</div>
+  </section>
+
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="sec-num">04</div>
+      <h2>深度学习家族：CNN / RNN / Transformer</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">卷积神经网络</span><span class="chip">循环神经网络</span><span class="chip">注意力机制</span>
+    </div>
+    <table>
+      <tr><th>架构</th><th>核心思想</th><th>擅长</th></tr>
+      <tr><td><strong>CNN</strong></td><td>用卷积核扫描局部特征</td><td>图像、局部模式识别、部分短文本分类</td></tr>
+      <tr><td><strong>RNN / LSTM / GRU</strong></td><td>按顺序逐步处理，并把“记忆”传递到下一步</td><td>时序、语音、早期 NLP</td></tr>
+      <tr><td><strong>Transformer</strong></td><td>训练时高度并行，并用自注意力建模全局关系</td><td>翻译、生成、长距离依赖建模、主流 LLM</td></tr>
+    </table>
+    <div class="callout"><strong>关键差异：</strong>CNN 更关注局部模式，RNN 按顺序传递记忆，Transformer 用自注意力直接计算任意位置之间的关系，并在训练阶段更容易并行。</div>
+  </section>
+
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="sec-num">05</div>
+      <h2>RNN 系列：RNN → LSTM → GRU</h2>
+    </div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="year">基础版 · RNN</div>
+        <p>逐词或逐步处理，把上一步的“隐状态”传给下一步。缺点是长序列中早期信息容易逐渐衰减，并受到梯度消失问题影响。</p>
+      </div>
+      <div class="tl-item">
+        <div class="year">升级版 · LSTM</div>
+        <p>增加“记忆细胞”和三个门控（输入门 / 遗忘门 / 输出门），可以选择性地记住或遗忘信息，显著缓解长距离依赖和梯度消失问题。</p>
+      </div>
+      <div class="tl-item">
+        <div class="year">精简版 · GRU</div>
+        <p>把 LSTM 的门控结构简化为两个门（重置门 / 更新门），参数更少，训练通常更快，在很多任务上效果与 LSTM 接近。</p>
+      </div>
+    </div>
+    <div class="callout"><strong>三者关系：</strong>它们属于同一家族，核心都是“顺序处理 + 状态传递”。LSTM 和 GRU 是对基础 RNN 的改进，不是完全不同的路线。</div>
+  </section>
+
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="sec-num">06</div>
+      <h2>Transformer：为什么能取代 RNN？</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">Self-Attention</span><span class="chip">训练并行</span>
+      <span class="chip">位置编码</span><span class="chip">Encoder-Decoder</span>
+    </div>
+    <table>
+      <tr><th>维度</th><th>RNN / LSTM</th><th>Transformer</th></tr>
+      <tr><td>计算方式</td><td>逐步串行，必须等待上一步状态</td><td>训练时多个位置可同时计算，GPU 利用率更高 ✅</td></tr>
+      <tr><td>长距离依赖</td><td>靠状态和门控维持，距离越远越容易衰减</td><td>自注意力可以直接连接任意两个位置 ✅</td></tr>
+      <tr><td>训练速度</td><td>串行依赖强，难以充分并行</td><td>训练阶段高度并行，适合大规模数据训练 ✅</td></tr>
+      <tr><td>超长文本</td><td>序列很长时效果下降明显</td><td>更擅长长距离依赖；但标准注意力复杂度高，超长文本成本较大</td></tr>
+    </table>
+    <div class="callout">
+      <strong>核心突破 = 训练并行 + 自注意力。</strong><br>
+      并行让训练速度大幅提升；自注意力让模型不必只靠“记忆传递”，而是直接计算词与词、句与句之间的关联。注意：自回归生成时通常仍要一个 token 一个 token 生成，并不是推理阶段完全并行。
+    </div>
+  </section>
+
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="sec-num">07</div>
+      <h2>LLM：基于 Transformer 的大规模语言模型</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">GPT 系列</span><span class="chip">BERT / T5</span><span class="chip">预训练 + 微调</span><span class="chip">对齐</span>
+    </div>
+    <div class="card">
+      <h3>什么是 LLM？</h3>
+      <p>Large Language Model，通常指在海量文本、代码或多模态数据上预训练的大规模语言模型。当前主流 LLM 多基于 Transformer 或其变体，参数量可从数十亿到数千亿级。</p>
+    </div>
+    <div class="card">
+      <h3>LLM 与 Transformer 的关系</h3>
+      <p>主流 LLM 通常基于 Transformer 或 Transformer 变体，但不能简单说“LLM 就是 Transformer”。LLM 的能力不仅来自架构放大，还来自高质量数据、预训练目标、指令微调、偏好对齐和推理优化。</p>
+    </div>
+    <div class="card">
+      <h3>LLM 与 NLP 的关系</h3>
+      <p>LLM 是当前 NLP 中最通用、最强大的实现方式之一。传统 NLP 往往针对每个任务训练专门模型；LLM 则能用一个通用基础模型完成翻译、摘要、问答、信息抽取、对话等多种任务。</p>
+    </div>
+    <div class="callout"><strong>一句话：</strong>LLM = Transformer/变体 × 大规模参数 × 高质量数据 × 预训练/微调/对齐。它是当前 NLP 的主流范式，但不是唯一终点。</div>
+  </section>
+
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="sec-num">08</div>
+      <h2>速查对比总表</h2>
+    </div>
+    <table>
+      <tr><th>概念</th><th>类型</th><th>核心特点</th><th>与 LLM 关系</th></tr>
+      <tr><td>机器学习</td><td>方法体系</td><td>从数据中学习规律</td><td>LLM 属于机器学习方法体系</td></tr>
+      <tr><td>深度学习</td><td>ML 子集</td><td>多层神经网络</td><td>LLM 的直接技术基础</td></tr>
+      <tr><td>NLP</td><td>应用方向</td><td>处理自然语言</td><td>LLM 的主要应用场景之一</td></tr>
+      <tr><td>CNN</td><td>网络架构</td><td>局部卷积特征</td><td>不是主流 LLM 架构，但可用于部分编码任务</td></tr>
+      <tr><td>RNN/LSTM/GRU</td><td>序列架构</td><td>顺序处理 + 状态传递</td><td>在主流 NLP 中大多被 Transformer 取代</td></tr>
+      <tr><td>Transformer</td><td>核心架构</td><td>训练并行 + 自注意力</td><td>当前主流 LLM 的基础架构</td></tr>
+      <tr><td>LLM</td><td>模型类型 / 基础模型</td><td>大规模预训练，常结合指令微调和对齐</td><td>—（本体）</td></tr>
+    </table>
+  </section>
+
+</main>
+
+<script>
+  const links = document.querySelectorAll('#sidebar a');
+  const sections = document.querySelectorAll('.section');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`#sidebar a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.4 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+<script>window.parent.postMessage({ action: "ready" }, "*"); 
+ 
+window.console = new Proxy(console, {
+  get(target, prop) {
+    if (['log', 'warn', 'error'].includes(prop)) {
+      return new Proxy(target[prop], {
+        apply(fn, thisArg, args) {
+          fn.apply(thisArg, args);
+          window.parent.postMessage({ action: 'console', 
+            type: prop, 
+            args: args.map((arg) => {
+              try {
+                return JSON.stringify(arg).replace(/^["']|["']$/g, '');
+              } catch (e) {
+                return arg;
+              }
+            }) 
+          }, '*');
+        }
+      });
+    }
+    return target[prop];
+  }
+});
+</script></body>
+</html>

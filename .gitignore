@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+
+# Claude 本地个人配置（仅本机）
+.claude/settings.local.json
+
+# 模型缓存 / 下载的权重（Hugging Face 示例）
+*.bin
+*.safetensors
+hf_cache/

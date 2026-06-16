@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HuggingFace LLM Course — 第二章精读笔记</title>
+  <style>
+    /* ── CSS 变量（设计规范配色系统）── */
+    :root {
+      --bg:           #f5f6fa;
+      --sidebar-bg:   #ffffff;
+      --content-bg:   #ffffff;
+      --border:       #e2e6ed;
+      --text:         #2c3e50;
+      --text-muted:   #7f8c9a;
+      --accent:       #4f6ef7;
+      --accent-light: #eef1fe;
+      --accent-hover: #3a56e0;
+      --heading:      #1a2540;
+      --code-bg:      #f0f2f8;
+      --tag-bg:       #e8ecfd;
+      --tag-text:     #3a56e0;
+      --timeline-line:#c5cde8;
+      --shadow:       0 2px 12px rgba(79,110,247,0.07);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── 侧边栏（Fixed）── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 240px;
+      height: 100vh;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .logo-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .sidebar-logo .logo-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 12px;
+    }
+    nav::-webkit-scrollbar { width: 5px; }
+    nav::-webkit-scrollbar-track { background: transparent; }
+    nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .nav-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 8px;
+      margin-bottom: 6px;
+      margin-top: 8px;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px 7px 12px;
+      border-radius: 6px;
+      border-left: 3px solid transparent;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .18s;
+      margin-bottom: 2px;
+    }
+    .nav-link:hover {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .nav-link.active {
+      border-left-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .nav-link .nav-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      width: 18px;
+      flex-shrink: 0;
+    }
+    .nav-link.active .nav-num { color: var(--accent); }
+
+    /* ── 内容区 ── */
+    .content {
+      margin-left: 240px;
+      padding: 48px 52px;
+    }
+    .content-inner {
+      max-width: 900px;
+    }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 40px; }
+    .hero-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 640px;
+      margin-bottom: 20px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .hero-chip {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .03em;
+    }
+
+    /* ── 分割线 ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 40px 0;
+    }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 40px;
+      scroll-margin-top: 32px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .sec-num {
+      width: 44px;
+      height: 44px;
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .section h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .section h2 small {
+      font-size: .82rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-left: 8px;
+    }
+    .section h3 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: var(--heading);
+      margin: 22px 0 10px;
+    }
+    .section p { margin-bottom: 12px; }
+    .section p code, .section li code {
+      background: var(--code-bg);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: .88em;
+      color: var(--accent-hover);
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--content-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+    .card-lead {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 16px;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+    }
+    .card ul { padding-left: 18px; margin: 6px 0 12px; }
+    .card li { margin-bottom: 6px; }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 12px; }
+
+    /* ── Feature card ── */
+    .feat-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .feat-card h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 6px;
+    }
+    .feat-card p, .feat-card ul {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .feat-card ul { padding-left: 16px; }
+    .feat-card li { margin-bottom: 4px; }
+
+    /* ── Chip 标签 ── */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .03em;
+      margin: 3px;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      background: var(--accent-light);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .callout-icon { flex-shrink: 0; line-height: 1.7; }
+    .callout-body strong {
+      display: block;
+      color: var(--heading);
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+    .callout-body { color: var(--text-muted); }
+    .callout-warn    { background: #fffbeb; border-left-color: #f59e0b; }
+    .callout-danger  { background: #fff5f5; border-left-color: #ef4444; }
+    .callout-success { background: #f0fdf4; border-left-color: #22c55e; }
+
+    /* ── 时间线 ── */
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 4px; top: 8px; bottom: 8px;
+      width: 2px;
+      background: var(--timeline-line);
+    }
+    .tl-item {
+      position: relative;
+      padding-bottom: 20px;
+    }
+    .tl-item:last-child { padding-bottom: 0; }
+    .tl-dot {
+      position: absolute;
+      left: -28px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--accent);
+      outline: 3px solid var(--content-bg);
+    }
+    .tl-year {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+    .tl-title { font-size: 13px; font-weight: 600; color: var(--heading); }
+    .tl-desc  { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Code block ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      margin: 14px 0;
+      color: var(--text);
+    }
+    code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
+    .kw  { color: #7c3aed; font-weight: 600; }
+    .fn  { color: #0369a1; }
+    .str { color: #065f46; }
+    .cm  { color: var(--text-muted); font-style: italic; }
+    .num { color: #9d174d; }
+
+    /* ── 对比表格 ── */
+    .table-wrap {
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      margin: 16px 0;
+    }
+    .model-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .model-table th {
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: .03em;
+    }
+    .model-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .model-table tr:last-child td { border-bottom: none; }
+    .model-table tr:nth-child(even) td { background: var(--accent-light); }
+    .model-name { font-weight: 700; color: var(--heading); }
+
+    /* ── 层级 / 架构说明 ── */
+    .hierarchy {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      line-height: 2;
+      font-size: 13px;
+      padding: 12px 0;
+    }
+    .hier-root { color: var(--accent); font-weight: 700; }
+    .hier-l1   { padding-left: 20px; color: #2d6a4f; font-weight: 600; }
+    .hier-l2   { padding-left: 44px; color: var(--text-muted); }
+    .hier-l3   { padding-left: 68px; color: #a0aab8; }
+
+    /* ── 总结区域 ── */
+    .sum-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .sum-col {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .sum-col h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sum-col ul { padding-left: 16px; }
+    .sum-col li { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+
+    /* ── Pipeline 流程图（自绘）── */
+    .pipe-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 0;
+      margin: 16px 0 4px;
+    }
+    .pipe-step {
+      flex: 1 1 120px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      text-align: center;
+      position: relative;
+    }
+    .pipe-step.accent {
+      background: var(--accent-light);
+      border-color: var(--accent);
+    }
+    .pipe-emoji { font-size: 20px; margin-bottom: 4px; }
+    .pipe-step h5 { font-size: 12px; font-weight: 700; color: var(--heading); }
+    .pipe-step p  { font-size: 11px; color: var(--text-muted); margin: 4px 0 0; }
+    .pipe-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-left: 240px;
+      padding: 24px 52px;
+      border-top: 1px solid var(--border);
+      background: var(--sidebar-bg);
+      color: var(--text-muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { color: var(--accent-hover); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .content { margin-left: 0; padding: 24px 20px; }
+      footer   { margin-left: 0; padding: 20px; }
+      .pipe-arrow { transform: rotate(90deg); width: 100%; height: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ━━━ 侧边栏 ━━━ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-name">🤗 LLM Course</div>
+    <div class="logo-sub">第二章 · 7 节精读笔记</div>
+  </div>
+  <nav>
+    <div class="nav-section-label">目录</div>
+    <a class="nav-link" href="#s1"><span class="nav-num">01</span>本章简介</a>
+    <a class="nav-link" href="#s2"><span class="nav-num">02</span>Pipeline 的内部</a>
+    <a class="nav-link" href="#s3"><span class="nav-num">03</span>模型 API</a>
+    <a class="nav-link" href="#s4"><span class="nav-num">04</span>Tokenizers</a>
+    <a class="nav-link" href="#s5"><span class="nav-num">05</span>处理多个序列</a>
+    <a class="nav-link" href="#s6"><span class="nav-num">06</span>综合应用</a>
+    <a class="nav-link" href="#s7"><span class="nav-num">07</span>章节总结</a>
+  </nav>
+</aside>
+
+<!-- ━━━ 内容区 ━━━ -->
+<div class="content">
+<div class="content-inner">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">HuggingFace · LLM Course · Chapter 2</div>
+    <h1>Transformers 库<span>从 Pipeline 到 Tokenizer 全解</span></h1>
+    <p class="hero-desc">拆解 <code>pipeline()</code> 背后的三步流水线，深入 <code>AutoModel</code> / <code>AutoTokenizer</code> API，掌握文本→张量→预测的完整链路，理解 batch、padding、attention mask 与编码解码的底层机制。</p>
+    <div class="hero-meta">
+      <span class="hero-chip">7 节内容</span>
+      <span class="hero-chip">3 步流水线</span>
+      <span class="hero-chip">3 种分词算法</span>
+      <span class="hero-chip">整理于 2026-06-16</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ━━━ 01 本章简介 ━━━ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="sec-num">01</div>
+      <h2>本章简介 <small>为何需要 🤗 Transformers</small></h2>
+    </div>
+
+    <div class="card">
+      <p class="card-lead">Transformer 模型动辄数百万到数十亿参数，训练与部署复杂；新模型层出不穷且各有实现。🤗 Transformers 用一个统一 API 解决「加载、训练、保存任意模型」的问题。</p>
+      <h3>三大设计特点</h3>
+      <div class="grid-3">
+        <div class="feat-card">
+          <h4>🚀 易于使用</h4>
+          <p>仅需两行代码即可下载、加载并使用先进的 NLP 模型进行推理。</p>
+        </div>
+        <div class="feat-card">
+          <h4>🧩 灵活</h4>
+          <p>所有模型本质都是 <code>nn.Module</code> / <code>tf.keras.Model</code>，可像普通模型一样处理。</p>
+        </div>
+        <div class="feat-card">
+          <h4>📖 简单</h4>
+          <p>「全在一个文件中」：每个模型前向传播独立定义，便于理解与修改，互不影响。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="callout-icon">🧭</span>
+      <div class="callout-body">
+        <strong>本章学习路径</strong>
+        端到端复刻 pipeline() → 模型 API（Config / Model）→ tokenizer API → batch / padding / 编码解码。
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body">
+        <strong>提示</strong>
+        为充分利用 Model Hub 与 🤗 Transformers 的所有功能，建议先创建一个 HuggingFace 账户。
+      </div>
+    </div>
+  </section>
+
+  <!-- ━━━ 02 Pipeline 的内部 ━━━ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="sec-num">02</div>
+      <h2>Pipeline 的内部 <small>三步拆解</small></h2>
+    </div>
+
+    <p>第一章里一句 <code>pipeline("sentiment-analysis")</code> 就得到情感预测。它背后其实是三个步骤的封装：</p>
+
+    <div class="pipe-flow">
+      <div class="pipe-step"><div class="pipe-emoji">📝</div><h5>原始文本</h5><p>Raw text</p></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step accent"><div class="pipe-emoji">✂️</div><h5>预处理 Tokenizer</h5><p>文本 → 数字 IDs</p></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step accent"><div class="pipe-emoji">🧠</div><h5>模型 Model</h5><p>张量 → logits</p></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step accent"><div class="pipe-emoji">🔢</div><h5>后处理</h5><p>SoftMax → 概率</p></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="pipe-emoji">✅</div><h5>预测结果</h5><p>label + score</p></div>
+    </div>
+
+    <h3>① 使用 Tokenizer 预处理</h3>
+    <p>Transformer 无法直接处理原始文本，tokenizer 负责：拆分为 token、映射为 input ID、添加特殊标记（如 <code>[CLS]</code> / <code>[SEP]</code>）。预处理方式必须与模型预训练时<strong>完全一致</strong>。</p>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer
+
+checkpoint = <span class="str">"distilbert-base-uncased-finetuned-sst-2-english"</span>
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+raw_inputs = [<span class="str">"I've been waiting for a HuggingFace course my whole life."</span>,
+              <span class="str">"I hate this so much!"</span>]
+<span class="cm"># padding 对齐长度，truncation 防止过长，return_tensors 指定张量框架</span>
+inputs = tokenizer(raw_inputs, padding=<span class="kw">True</span>, truncation=<span class="kw">True</span>, return_tensors=<span class="str">"pt"</span>)</pre>
+
+    <div class="callout">
+      <span class="callout-icon">💡</span>
+      <div class="callout-body">
+        <strong>关键产物</strong>
+        输出字典含 <code>input_ids</code>（每行一句话的 token ID）与 <code>attention_mask</code>（标记哪些位置是真实 token、哪些是填充）。
+      </div>
+    </div>
+
+    <h3>② 探索模型与模型头</h3>
+    <p><code>AutoModel</code> 只输出隐状态（hidden states，高维特征向量）。模型输出通常有三个维度：</p>
+    <div class="grid-3">
+      <div class="feat-card"><h4>Batch size</h4><p>一次处理的序列数（示例中为 2）</p></div>
+      <div class="feat-card"><h4>Sequence length</h4><p>序列长度（示例中为 16）</p></div>
+      <div class="feat-card"><h4>Hidden size</h4><p>每个输入的向量维度（小模型 768，大模型可达 3072+）</p></div>
+    </div>
+    <p>要得到具体任务的结果，需加载带「模型头」的类——例如序列分类用 <code>AutoModelForSequenceClassification</code>，它把高维向量压缩成每个标签一个分数。</p>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForSequenceClassification
+
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+outputs = model(**inputs)
+<span class="kw">print</span>(outputs.logits.shape)  <span class="cm"># 2 句 × 2 标签 → torch.Size([2, 2])</span></pre>
+
+    <h3>③ 后处理：logits → 概率</h3>
+    <p>模型输出的是未归一化的 logits，需经 SoftMax 转成概率（Transformers 训练时通常把最后激活与损失融合，故输出仍为 logits）：</p>
+<pre><span class="kw">import</span> torch
+predictions = torch.nn.functional.softmax(outputs.logits, dim=-<span class="num">1</span>)
+<span class="cm"># 通过 config.id2label 把 ID 映射回标签：{0:'NEGATIVE', 1:'POSITIVE'}</span></pre>
+    <p>至此，我们用 tokenizer 预处理 + 模型 + 后处理，手工复刻了 <code>pipeline()</code> 的全部逻辑。</p>
+  </section>
+
+  <!-- ━━━ 03 模型 API ━━━ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="sec-num">03</div>
+      <h2>模型 API <small>Config / 加载 / 保存 / 推理</small></h2>
+    </div>
+
+    <p><code>AutoModel</code> 是对各类模型的智能包装，能根据 checkpoint 自动推断架构并实例化；若已知具体类型，也可直接用对应类（如 <code>BertModel</code>）。</p>
+
+    <h3>创建模型与 Config</h3>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> BertConfig, BertModel
+
+config = BertConfig()   <span class="cm"># 默认配置 → 随机初始化（输出胡言乱语，需训练）</span>
+model  = BertModel(config)
+<span class="cm"># 关键属性：hidden_size=768, num_hidden_layers=12, num_attention_heads=12 ...</span></pre>
+
+    <h3>三种加载与保存方式</h3>
+    <div class="table-wrap">
+      <table class="model-table">
+        <thead>
+          <tr><th>方式</th><th>说明</th><th>产物</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model-name">随机初始化</td>
+            <td><code>BertModel(BertConfig())</code>，可运行但输出无意义</td>
+            <td>未训练权重</td>
+          </tr>
+          <tr>
+            <td class="model-name"><code>from_pretrained()</code></td>
+            <td>加载预训练 checkpoint，权重缓存到 <code>~/.cache/huggingface</code>（可用 <code>HF_HOME</code> 自定义）</td>
+            <td>可直接推理 / 微调</td>
+          </tr>
+          <tr>
+            <td class="model-name"><code>save_pretrained()</code></td>
+            <td>把模型写入磁盘目录</td>
+            <td><code>config.json</code> + <code>model.safetensors</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-success">
+      <span class="callout-icon">🔑</span>
+      <div class="callout-body">
+        <strong>两个文件相辅相成</strong>
+        <code>config.json</code> 描述架构（含元数据与 Transformers 版本）；<code>model.safetensors</code> 即「状态字典」，存放全部权重。缺一不可。
+      </div>
+    </div>
+
+    <h3>用张量做推理</h3>
+    <p>模型只接受数字（由 tokenizer 转换的张量）。多个编码序列需先组成矩形张量：</p>
+<pre><span class="kw">import</span> torch
+sequences = [<span class="str">"Hello!"</span>, <span class="str">"Cool."</span>, <span class="str">"Nice!"</span>]
+encoded   = [[<span class="num">101</span>, <span class="num">7592</span>, <span class="num">999</span>, <span class="num">102</span>], ...]  <span class="cm"># tokenizer 给出的 input IDs</span>
+model_inputs = torch.tensor(encoded)
+output = model(model_inputs)   <span class="cm"># 必填项只有 input IDs</span></pre>
+  </section>
+
+  <!-- ━━━ 04 Tokenizers ━━━ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="sec-num">04</div>
+      <h2>Tokenizers <small>三种分词算法 + 编解码</small></h2>
+    </div>
+
+    <p>tokenizer 的目标：把文本转换为模型可处理的数字，且尽量有意义、尽量简洁。</p>
+
+    <h3>三种分词算法对比</h3>
+    <div class="table-wrap">
+      <table class="model-table">
+        <thead>
+          <tr><th>算法</th><th>做法</th><th>优点</th><th>缺点</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model-name">基于单词 Word-based</td>
+            <td>按空格/规则切词，如 <code>split()</code></td>
+            <td>简单直观</td>
+            <td>词汇表巨大；<code>dog</code>/<code>dogs</code> 视为无关；多 <code>[UNK]</code></td>
+          </tr>
+          <tr>
+            <td class="model-name">基于字符 Character-based</td>
+            <td>拆分为单个字符</td>
+            <td>词汇表小；几乎无未知 token</td>
+            <td>单字符语义弱；序列变长（一词≈10+ token）</td>
+          </tr>
+          <tr>
+            <td class="model-name">基于子词 Subword</td>
+            <td>常用词保留，罕见词拆为有义子词</td>
+            <td>小词汇表 + 高覆盖；语义保留</td>
+            <td>需配合算法（BPE / WordPiece 等）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <span class="callout-icon">🔤</span>
+      <div class="callout-body">
+        <strong>子词示例</strong>
+        <code>tokenization</code> → <code>token</code> + <code>##ization</code>；<code>annoyingly</code> → <code>annoying</code> + <code>ly</code>。两个子词都更常见，且复合后语义完整。
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="feat-card"><h4>Byte-level BPE</h4><p>用于 GPT-2</p></div>
+      <div class="feat-card"><h4>WordPiece</h4><p>用于 BERT</p></div>
+      <div class="feat-card"><h4>SentencePiece / Unigram</h4><p>用于多语言模型</p></div>
+    </div>
+
+    <h3>加载 / 保存</h3>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained(<span class="str">"bert-base-cased"</span>)
+tokenizer.save_pretrained(<span class="str">"directory_on_my_computer"</span>)
+<span class="cm"># from_pretrained / save_pretrained 同时保存算法(≈架构)与词汇表(≈权重)</span></pre>
+
+    <h3>编码（Encoding）= 分词 + 转 ID</h3>
+<pre>sequence = <span class="str">"Using a Transformer network is simple"</span>
+tokens = tokenizer.tokenize(sequence)
+<span class="cm"># ['Using', 'a', 'transform', '##er', 'network', 'is', 'simple']</span>
+ids = tokenizer.convert_tokens_to_ids(tokens)
+<span class="cm"># [7993, 170, 11303, 1200, 2443, 1110, 3014]</span></pre>
+
+    <h3>解码（Decoding）= ID → 字符串</h3>
+<pre>tokenizer.decode([<span class="num">7993</span>, <span class="num">170</span>, <span class="num">11303</span>, <span class="num">1200</span>, <span class="num">2443</span>, <span class="num">1110</span>, <span class="num">3014</span>])
+<span class="cm"># 'Using a Transformer network is simple' —— 会自动合并同词的子词</span></pre>
+  </section>
+
+  <!-- ━━━ 05 处理多个序列 ━━━ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="sec-num">05</div>
+      <h2>处理多个序列 <small>Batch / Padding / Mask</small></h2>
+    </div>
+
+    <div class="callout callout-danger">
+      <span class="callout-icon">🐞</span>
+      <div class="callout-body">
+        <strong>常见坑：单句直接送入模型报错</strong>
+        <code>model(input_ids)</code> 会抛 <code>IndexError: Dimension out of range</code>——因为模型默认需要一个句子<strong>列表</strong>，必须补上 batch 维度 <code>torch.tensor([ids])</code>。
+      </div>
+    </div>
+
+    <h3>① 模型需要一批输入</h3>
+    <p>批处理（Batching）是一次性送入多个句子。即便只有一句，也要构造成 batch 维度。</p>
+
+    <h3>② 填充 Padding</h3>
+    <p>张量必须是矩形，长度不同的句子无法直接堆叠。用 <code>tokenizer.pad_token_id</code> 把短句补齐到相同长度。</p>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body">
+        <strong>填充会污染预测！</strong>
+        注意力层会把填充 token 也纳入上下文，导致 batch 中短句的 logits 与单独预测时不同。必须用 attention mask 告诉模型忽略填充。
+      </div>
+    </div>
+
+    <h3>③ 注意力掩码 Attention Mask</h3>
+    <p>与 input IDs <strong>形状相同</strong>的张量：1 表示关注，0 表示忽略（即填充位）。</p>
+<pre>batched_ids = [[<span class="num">200</span>, <span class="num">200</span>, <span class="num">200</span>],
+               [<span class="num">200</span>, <span class="num">200</span>, tokenizer.pad_token_id]]
+attention_mask = [[<span class="num">1</span>,<span class="num">1</span>,<span class="num">1</span>],
+                  [<span class="num">1</span>,<span class="num">1</span>,<span class="num">0</span>]]   <span class="cm"># 第二句末位是填充 → 0</span>
+outputs = model(torch.tensor(batched_ids), attention_mask=torch.tensor(attention_mask))
+<span class="cm"># 加上 mask 后，batch 中短句的 logits 与单独预测一致</span></pre>
+
+    <h3>④ 更长的句子</h3>
+    <div class="grid-2">
+      <div class="feat-card">
+        <h4>🚧 模型最大序列长度</h4>
+        <p>多数模型只支持 512 或 1024 个 token，超出会崩溃。</p>
+      </div>
+      <div class="feat-card">
+        <h4>✂️ 两种对策</h4>
+        <p>①换用长序列模型（Longformer、LED）；②截断 <code>sequence[:max_sequence_length]</code>。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ━━━ 06 综合应用 ━━━ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="sec-num">06</div>
+      <h2>综合应用 <small>一把梭的高级 API</small></h2>
+    </div>
+
+    <p>前面手动完成了分词、转 ID、填充、截断、mask。其实直接调用 <code>tokenizer</code> 对象就能一次搞定所有：</p>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+model_inputs = tokenizer(sequence)            <span class="cm"># 单句</span>
+model_inputs = tokenizer(sequences)           <span class="cm"># 多句，API 一致</span>
+model_inputs = tokenizer(sequences, padding=<span class="str">"longest"</span>)      <span class="cm"># 填到最长</span>
+model_inputs = tokenizer(sequences, padding=<span class="str">"max_length"</span>, max_length=<span class="num">8</span>)
+model_inputs = tokenizer(sequences, truncation=<span class="kw">True</span>)         <span class="cm"># 截断</span>
+model_inputs = tokenizer(sequences, padding=<span class="kw">True</span>, return_tensors=<span class="str">"pt"</span>)  <span class="cm"># "pt"/"tf"/"np"</span></pre>
+
+    <h3>特殊 Tokens 自动添加</h3>
+    <p>直接调用 tokenizer 时，它会在首尾自动加上预训练时用到的特殊标记，结果与手动 <code>tokenize()</code> 略有不同：</p>
+    <div class="hierarchy">
+      <div class="hier-root">[101] [CLS]  ← 开头自动添加</div>
+      <div class="hier-l1">[1045, 1005, 2310, ...] ← 实际 token IDs</div>
+      <div class="hier-root">[102] [SEP]  ← 结尾自动添加</div>
+      <div class="hier-l2">解码 → "[CLS] i've been waiting ... [SEP]"</div>
+      <div class="hier-l2">不同模型加法不同；tokenizer 知道哪些必需并会自动处理</div>
+    </div>
+
+    <h3>小结：从 tokenizer 到模型</h3>
+<pre><span class="kw">import</span> torch
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer, AutoModelForSequenceClassification
+
+checkpoint = <span class="str">"distilbert-base-uncased-finetuned-sst-2-english"</span>
+tokenizer  = AutoTokenizer.from_pretrained(checkpoint)
+model      = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+sequences  = [<span class="str">"I've been waiting for a HuggingFace course my whole life."</span>, <span class="str">"So have I!"</span>]
+
+tokens = tokenizer(sequences, padding=<span class="kw">True</span>, truncation=<span class="kw">True</span>, return_tensors=<span class="str">"pt"</span>)
+output = model(**tokens)   <span class="cm"># 多序列(填充) + 长序列(截断) + 指定张量，一步到位</span></pre>
+  </section>
+
+  <!-- ━━━ 07 章节总结 ━━━ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="sec-num">07</div>
+      <h2>章节总结 <small>基本用法完成</small></h2>
+    </div>
+
+    <div class="card">
+      <p class="card-lead">回顾本章，你已经掌握了 Transformers 模型的核心使用链路。从这里开始，足以自由浏览 🤗 Transformers 官方文档。</p>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 01</div>
+        <div class="tl-title">理解 Transformer 基本构造块</div>
+        <div class="tl-desc">模型、Config、隐状态、模型头之间的关系</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 02</div>
+        <div class="tl-title">掌握 Tokenizer 管道</div>
+        <div class="tl-desc">分词 → input IDs → 填充 → 截断 → attention mask</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 03</div>
+        <div class="tl-title">端到端使用模型</div>
+        <div class="tl-desc">设定 tokenizer + 模型，从文本直接得到预测结果</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 04</div>
+        <div class="tl-title">理解 input IDs 局限性</div>
+        <div class="tl-desc">为何需要 batch 维度、padding、attention mask</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 05</div>
+        <div class="tl-title">灵活可配置的 tokenizer 方法</div>
+        <div class="tl-desc">一键处理多序列、长序列、多种张量框架</div>
+      </div>
+    </div>
+
+    <div class="sum-row">
+      <div class="sum-col">
+        <h4>📦 核心类</h4>
+        <ul>
+          <li><code>AutoTokenizer</code></li>
+          <li><code>AutoModel</code></li>
+          <li><code>AutoModelForSequenceClassification</code></li>
+          <li><code>BertConfig</code> / <code>BertModel</code></li>
+        </ul>
+      </div>
+      <div class="sum-col">
+        <h4>⚙️ 核心方法</h4>
+        <ul>
+          <li><code>from_pretrained()</code> / <code>save_pretrained()</code></li>
+          <li><code>tokenize()</code> / <code>convert_tokens_to_ids()</code></li>
+          <li><code>decode()</code></li>
+          <li><code>tokenizer(...)</code> 高级调用</li>
+        </ul>
+      </div>
+      <div class="sum-col">
+        <h4>🔑 关键概念</h4>
+        <ul>
+          <li>三步流水线：预处理 / 模型 / 后处理</li>
+          <li>logits → SoftMax → 概率</li>
+          <li>batch / padding / attention mask</li>
+          <li>特殊 token [CLS] [SEP]</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+</div>
+
+<!-- ━━━ Footer ━━━ -->
+<footer>
+  <span>🤗 Transformers · 第二章精读笔记 · 基于官方 LLM Course 中文版整理</span>
+  <a href="https://huggingface.co/learn/llm-course/zh-CN/chapter2/1" target="_blank" rel="noopener">查看原文 →</a>
+</footer>
+
+<script>
+  const links    = document.querySelectorAll('.nav-link');
+  const sections = document.querySelectorAll('.section');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const match = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+        if (match) match.classList.add('active');
+      }
+    });
+  }, { threshold: 0.4 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

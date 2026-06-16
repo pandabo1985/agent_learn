@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>注意力机制讲解</title>
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --sidebar-bg: #ffffff;
+    --content-bg: #ffffff;
+    --border: #e2e6ed;
+    --text: #2c3e50;
+    --text-muted: #7f8c9a;
+    --accent: #4f6ef7;
+    --accent-light: #eef1fe;
+    --accent-hover: #3a56e0;
+    --heading: #1a2540;
+    --code-bg: #f0f2f8;
+    --callout-bg: #eef1fe;
+    --callout-border: #4f6ef7;
+    --tag-bg: #e8ecfd;
+    --tag-text: #3a56e0;
+    --timeline-line: #c5cde8;
+    --shadow: 0 2px 12px rgba(79,110,247,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  #sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 0 40px;
+    box-shadow: var(--shadow);
+    z-index: 100;
+  }
+
+  #sidebar .logo {
+    padding: 0 20px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  #sidebar a {
+    display: block;
+    padding: 7px 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all .18s;
+  }
+  #sidebar a:hover { color: var(--accent); background: var(--accent-light); }
+  #sidebar a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: var(--accent-light);
+    font-weight: 600;
+  }
+
+  #main {
+    margin-left: 240px;
+    padding: 48px 52px;
+    max-width: 900px;
+    width: 100%;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--heading);
+    margin-bottom: 8px;
+  }
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 48px;
+  }
+
+  .section {
+    margin-bottom: 56px;
+    scroll-margin-top: 32px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  .sec-num {
+    font-weight: 900;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .section-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--heading);
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .chip {
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .03em;
+  }
+
+  .card {
+    background: var(--content-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 { font-size: 1rem; font-weight: 700; color: var(--heading); margin-bottom: 8px; }
+  .card p { font-size: 14px; color: var(--text); }
+
+  .callout {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--callout-border);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .callout strong { color: var(--accent); }
+
+  .hierarchy {
+    background: var(--content-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .hierarchy pre {
+    margin: 0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text-muted);
+    white-space: pre;
+    tab-size: 2;
+  }
+  .hierarchy .root { color: var(--accent); font-weight: 800; }
+  .hierarchy .method { color: #2d6a4f; font-weight: 700; }
+  .hierarchy .field { color: #2d6a4f; font-weight: 700; }
+  .hierarchy .note { color: var(--text-muted); font-style: italic; }
+
+  .timeline { position: relative; padding-left: 28px; margin: 16px 0; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--timeline-line);
+  }
+  .tl-item { position: relative; margin-bottom: 18px; }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -24px; top: 6px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .tl-item .year {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: .06em;
+    margin-bottom: 2px;
+  }
+  .tl-item p { font-size: 14px; color: var(--text); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 16px 0;
+    background: var(--content-bg);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  th {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: var(--accent-light); }
+
+  .formula {
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 14px;
+    color: var(--heading);
+    text-align: center;
+    letter-spacing: .02em;
+  }
+  .formula .label {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 6px;
+    text-align: left;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: 0;
+  }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  @media (max-width: 768px) {
+    #sidebar { display: none; }
+    #main { margin-left: 0; padding: 24px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="logo">注意力机制</div>
+  <a href="#s1">01 是什么</a>
+  <a href="#s2">02 为什么需要它</a>
+  <a href="#s3">03 核心计算 Q/K/V</a>
+  <a href="#s4">04 自注意力</a>
+  <a href="#s5">05 多头注意力</a>
+  <a href="#s6">06 发展历程</a>
+  <a href="#s7">07 主要变体</a>
+  <a href="#s8">08 速查对比</a>
+</nav>
+
+<main id="main">
+  <h1>注意力机制 <span>深度讲解</span></h1>
+  <p class="subtitle">从动机到原理 · 从 Q/K/V 到多头注意力 · 读懂 Transformer 的核心</p>
+
+  <!-- Section 1 -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="sec-num">01</div>
+      <h2>什么是注意力机制</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">Attention</span>
+      <span class="chip">权重分配</span>
+      <span class="chip">上下文向量</span>
+      <span class="chip">聚焦</span>
+    </div>
+    <div class="card">
+      <h3>直觉理解</h3>
+      <p>人类阅读一个句子时，不会平等对待每个词——读到"银行"时，会根据上下文判断是"金融机构"还是"河岸"。注意力机制让神经网络也能做到这一点：<strong>动态地为不同位置的信息分配不同的重要性权重</strong>，而不是固定地处理每个位置。</p>
+    </div>
+    <div class="card">
+      <h3>技术定义</h3>
+      <p>注意力机制是一种计算加权求和的方法：给定一组候选信息（Value），根据查询（Query）与每条候选信息的键（Key）的相似度，计算出权重，再对 Value 加权求和，得到一个聚焦后的上下文向量。</p>
+    </div>
+    <div class="callout">
+      <strong>一句话：</strong>注意力机制 = "根据当前需求，动态决定应该重点关注哪些信息，然后加权汇总"。
+    </div>
+  </section>
+
+  <!-- Section 2 -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="sec-num">02</div>
+      <h2>为什么需要注意力机制</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">瓶颈向量</span>
+      <span class="chip">长距离依赖</span>
+      <span class="chip">梯度消失</span>
+      <span class="chip">信息压缩</span>
+    </div>
+    <div class="card">
+      <h3>RNN 的瓶颈问题</h3>
+      <p>传统的 Seq2Seq 模型（编码器-解码器结构）将整个输入序列压缩成一个固定长度的向量，再由解码器展开。这个"瓶颈向量"必须承载所有信息，句子越长，早期信息丢失越多，翻译质量下降越明显。</p>
+    </div>
+    <div class="hierarchy">
+<pre><span class="root">Seq2Seq 的瓶颈问题</span>
+├─ <span class="method">编码器：逐词处理 → 压缩成一个固定向量 c</span>
+│  └─ 问题：长句子中，第 1 个词的信息到最后几乎消失
+│
+├─ <span class="field">解码器：只能看到这一个向量 c</span>
+│  └─ 问题：无论生成哪个目标词，都用同一个 c，缺乏针对性
+│
+└─ <span class="note">注意力机制的解法：让解码器在生成每个词时，
+   都能"回头看"编码器的所有隐状态，动态聚焦相关部分</span></pre>
+    </div>
+    <div class="callout">
+      <strong>动机总结：</strong>注意力机制打破了"固定瓶颈向量"的限制，让模型在处理每个输出时，都能有针对性地访问输入序列的任意位置，从根本上解决了长距离依赖问题。
+    </div>
+  </section>
+
+  <!-- Section 3 -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="sec-num">03</div>
+      <h2>核心计算：Query / Key / Value</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">Query 查询</span>
+      <span class="chip">Key 键</span>
+      <span class="chip">Value 值</span>
+      <span class="chip">Softmax</span>
+      <span class="chip">缩放点积</span>
+    </div>
+    <div class="card">
+      <h3>三个角色的类比</h3>
+      <p>可以把注意力机制类比成图书馆检索：你提出一个<strong>查询（Query）</strong>，图书馆里每本书都有一个<strong>索引标签（Key）</strong>，你根据查询与标签的匹配程度决定借哪些书，最终取出书的<strong>内容（Value）</strong>加权合并成答案。</p>
+    </div>
+    <div class="formula">
+      <span class="label">缩放点积注意力（Scaled Dot-Product Attention）</span>
+      Attention(Q, K, V) = softmax( Q·Kᵀ / √dₖ ) · V
+    </div>
+    <div class="card">
+      <h3>逐步拆解</h3>
+      <p>
+        <strong>① Q·Kᵀ</strong>：计算查询与所有键的点积相似度，得到原始注意力分数矩阵。<br>
+        <strong>② ÷√dₖ</strong>：除以键向量维度的平方根，防止点积值过大导致 softmax 梯度消失。<br>
+        <strong>③ softmax</strong>：将分数归一化为概率分布（权重之和为 1）。<br>
+        <strong>④ ·V</strong>：用权重对 Value 加权求和，得到聚焦后的输出向量。
+      </p>
+    </div>
+    <div class="callout">
+      <strong>为什么要除以 √dₖ？</strong>当维度 dₖ 很大时，点积的方差会随维度增大，导致某些分数极大、softmax 后几乎全部权重集中在一个位置，梯度几乎为零。除以 √dₖ 可将方差稳定在合理范围。
+    </div>
+  </section>
+
+  <!-- Section 4 -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="sec-num">04</div>
+      <h2>自注意力（Self-Attention）</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">Self-Attention</span>
+      <span class="chip">同源 Q/K/V</span>
+      <span class="chip">全局关联</span>
+      <span class="chip">并行计算</span>
+    </div>
+    <div class="card">
+      <h3>什么是自注意力</h3>
+      <p>普通注意力的 Query 来自解码器，Key/Value 来自编码器（跨序列）。<strong>自注意力则让同一序列中每个位置都对自身序列内的所有位置做注意力</strong>——Q、K、V 均来自同一输入，通过三个不同的线性投影矩阵（Wq、Wk、Wv）生成。</p>
+    </div>
+    <div class="hierarchy">
+<pre><span class="root">输入序列：["我", "爱", "学习"]</span>
+├─ <span class="method">每个词 → 线性变换 → Q、K、V 向量</span>
+│
+├─ "我" 的 Q 与 ["我","爱","学习"] 的所有 K 计算相似度
+│  → 得到权重：[0.7, 0.2, 0.1]
+│  → 加权求和所有 V → "我"的输出向量（融合了全局上下文）
+│
+├─ "爱" 同理，关注不同的位置组合
+│
+└─ <span class="note">三个位置可同时并行计算，无需按序等待</span></pre>
+    </div>
+    <div class="card">
+      <h3>自注意力的核心优势</h3>
+      <p>
+        <strong>全局感受野：</strong>任意两个位置之间的距离都是 1 步（直接计算），不像 RNN 需要逐步传递。<br>
+        <strong>训练可并行：</strong>序列中所有位置的注意力可同时计算，GPU 利用率极高。<br>
+        <strong>动态上下文：</strong>同一个词在不同语境中会产生不同的注意力权重，捕捉多义性。
+      </p>
+    </div>
+    <div class="callout">
+      <strong>对比 RNN：</strong>RNN 中"我"对"学习"的影响需经过两步状态传递，路径越长信息越易丢失；自注意力中"我"和"学习"直接交互，路径长度恒为 1。
+    </div>
+  </section>
+
+  <!-- Section 5 -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="sec-num">05</div>
+      <h2>多头注意力（Multi-Head Attention）</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">多头</span>
+      <span class="chip">子空间</span>
+      <span class="chip">并行注意力</span>
+      <span class="chip">拼接投影</span>
+    </div>
+    <div class="card">
+      <h3>为什么需要多头</h3>
+      <p>单头注意力在每次计算中只能关注一种模式（比如语法关系）。多头注意力将 Q/K/V 分别投影到 h 个不同的低维子空间，每个"头"独立学习不同类型的关联（语义、语法、指代、位置等），最后拼接所有头的输出再做一次线性投影。</p>
+    </div>
+    <div class="hierarchy">
+<pre><span class="root">Multi-Head Attention</span>
+├─ <span class="method">head₁ = Attention(QW₁q, KW₁k, VW₁v)</span>  ← 关注语义相似性
+├─ <span class="method">head₂ = Attention(QW₂q, KW₂k, VW₂v)</span>  ← 关注句法依存
+├─ <span class="method">head₃ = Attention(QW₃q, KW₃k, VW₃v)</span>  ← 关注指代关系
+│  … (共 h 个头，Transformer 原文 h=8)
+│
+└─ <span class="field">输出 = Concat(head₁,…,headₕ) · Wₒ</span></pre>
+    </div>
+    <div class="formula">
+      <span class="label">多头注意力公式</span>
+      MultiHead(Q,K,V) = Concat(head₁, …, headₕ) · Wₒ
+    </div>
+    <div class="callout">
+      <strong>类比：</strong>就像用 8 个不同角度的摄像头同时拍摄同一场景，每个摄像头捕捉不同侧面的信息，最后合并成一张全面的理解图。
+    </div>
+  </section>
+
+  <!-- Section 6 -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="sec-num">06</div>
+      <h2>发展历程</h2>
+    </div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="year">2014 · Bahdanau Attention</div>
+        <p>Bahdanau 等人提出第一个神经机器翻译注意力机制，让解码器在生成每个词时对编码器所有隐状态加权求和，显著提升了长句翻译质量。这是"注意力机制"的起点。</p>
+      </div>
+      <div class="tl-item">
+        <div class="year">2015 · Luong Attention</div>
+        <p>Luong 等人提出更简洁的点积注意力和 local attention 变体，进一步验证了注意力机制的有效性，并将计算效率提升。</p>
+      </div>
+      <div class="tl-item">
+        <div class="year">2017 · Transformer（"Attention Is All You Need"）</div>
+        <p>Vaswani 等人提出完全基于自注意力的 Transformer 架构，彻底抛弃 RNN，引入缩放点积注意力、多头注意力和位置编码。成为现代 NLP 的奠基之作。</p>
+      </div>
+      <div class="tl-item">
+        <div class="year">2018–2019 · BERT / GPT 系列</div>
+        <p>BERT（双向 Transformer 编码器）和 GPT（单向 Transformer 解码器）证明预训练大规模 Transformer 后微调可以在几乎所有 NLP 任务上取得最优结果，注意力机制成为 AI 主流范式。</p>
+      </div>
+      <div class="tl-item">
+        <div class="year">2022 · Flash Attention</div>
+        <p>Dao 等人提出 Flash Attention，通过 IO 感知的分块计算重写了注意力的 GPU 实现，将内存占用从 O(n²) 降至 O(n)，训练速度提升 2–4×，使超长上下文窗口成为可能。</p>
+      </div>
+      <div class="tl-item">
+        <div class="year">2023–今 · 长上下文与稀疏注意力</div>
+        <p>Flash Attention 2/3、Ring Attention、Sliding Window Attention 等变体持续突破上下文长度限制。主流模型上下文窗口从 2K token 扩展至 128K–1M token。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 7 -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="sec-num">07</div>
+      <h2>注意力机制主要变体</h2>
+    </div>
+    <div class="chips">
+      <span class="chip">全局注意力</span>
+      <span class="chip">稀疏注意力</span>
+      <span class="chip">线性注意力</span>
+      <span class="chip">Flash Attention</span>
+      <span class="chip">分组查询注意力</span>
+    </div>
+    <table>
+      <tr><th>变体</th><th>核心思路</th><th>解决问题</th><th>代表应用</th></tr>
+      <tr>
+        <td><strong>全局自注意力</strong></td>
+        <td>每个位置与所有位置计算注意力</td>
+        <td>最强建模能力，无近似损失</td>
+        <td>BERT、GPT-2、原始 Transformer</td>
+      </tr>
+      <tr>
+        <td><strong>稀疏注意力</strong></td>
+        <td>只与局部窗口或固定步长位置计算</td>
+        <td>将复杂度从 O(n²) 降低</td>
+        <td>Longformer、BigBird</td>
+      </tr>
+      <tr>
+        <td><strong>线性注意力</strong></td>
+        <td>用核函数近似 softmax，改变计算顺序</td>
+        <td>理论 O(n) 复杂度</td>
+        <td>Performer、cosFormer</td>
+      </tr>
+      <tr>
+        <td><strong>Flash Attention</strong></td>
+        <td>IO 感知分块计算，不近似 softmax</td>
+        <td>显存从 O(n²) 降至 O(n)，速度大幅提升</td>
+        <td>GPT-4、Llama 3、Claude 等</td>
+      </tr>
+      <tr>
+        <td><strong>分组查询注意力（GQA）</strong></td>
+        <td>多个 Query 头共享一组 K/V 头</td>
+        <td>推理时 KV Cache 显著减小</td>
+        <td>Llama 2/3、Mistral</td>
+      </tr>
+      <tr>
+        <td><strong>多查询注意力（MQA）</strong></td>
+        <td>所有 Query 头共享同一对 K/V</td>
+        <td>推理速度最快，KV Cache 最小</td>
+        <td>PaLM、Falcon</td>
+      </tr>
+    </table>
+    <div class="callout">
+      <strong>趋势：</strong>标准全局注意力仍是训练质量的上限，Flash Attention 已成为工程标配，GQA 正在快速取代 MHA 成为推理优化的主流选择。
+    </div>
+  </section>
+
+  <!-- Section 8 -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="sec-num">08</div>
+      <h2>速查对比总表</h2>
+    </div>
+    <table>
+      <tr><th>概念</th><th>类型</th><th>核心特点</th><th>与 Transformer 关系</th></tr>
+      <tr>
+        <td>Bahdanau 注意力</td>
+        <td>跨序列注意力</td>
+        <td>解码器动态聚焦编码器隐状态</td>
+        <td>注意力机制的起源，非自注意力</td>
+      </tr>
+      <tr>
+        <td>缩放点积注意力</td>
+        <td>计算单元</td>
+        <td>Q·Kᵀ/√dₖ → softmax → ·V</td>
+        <td>Transformer 注意力的基础公式</td>
+      </tr>
+      <tr>
+        <td>自注意力</td>
+        <td>架构机制</td>
+        <td>Q/K/V 来自同一序列，全局并行</td>
+        <td>Transformer 的核心组件</td>
+      </tr>
+      <tr>
+        <td>多头注意力</td>
+        <td>架构扩展</td>
+        <td>多个注意力头并行，捕捉多种关联</td>
+        <td>Transformer 每层的标准配置</td>
+      </tr>
+      <tr>
+        <td>交叉注意力</td>
+        <td>架构机制</td>
+        <td>Q 来自解码器，K/V 来自编码器</td>
+        <td>Transformer 解码器与编码器的桥梁</td>
+      </tr>
+      <tr>
+        <td>Flash Attention</td>
+        <td>工程实现</td>
+        <td>分块计算，IO 感知，结果与标准相同</td>
+        <td>主流 LLM 训练/推理的标配实现</td>
+      </tr>
+      <tr>
+        <td>GQA / MQA</td>
+        <td>推理优化</td>
+        <td>减少 KV 头数量，缩小 KV Cache</td>
+        <td>开源 LLM 推理加速的主流方案</td>
+      </tr>
+    </table>
+  </section>
+
+</main>
+
+<script>
+  const links = document.querySelectorAll('#sidebar a');
+  const sections = document.querySelectorAll('.section');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`#sidebar a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.4 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

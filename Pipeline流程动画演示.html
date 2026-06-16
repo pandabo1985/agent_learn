@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLP Pipeline 完整流程演示</title>
+    <style>
+        /* ===== 设计规范配色变量（见 设计规范.md） ===== */
+        :root {
+            --bg: #f5f6fa;
+            --sidebar-bg: #ffffff;
+            --content-bg: #ffffff;
+            --border: #e2e6ed;
+            --text: #2c3e50;
+            --text-muted: #7f8c9a;
+            --accent: #4f6ef7;
+            --accent-light: #eef1fe;
+            --accent-hover: #3a56e0;
+            --heading: #1a2540;
+            --code-bg: #f0f2f8;
+            --callout-bg: #eef1fe;
+            --callout-border: #4f6ef7;
+            --tag-bg: #e8ecfd;
+            --tag-text: #3a56e0;
+            --timeline-line: #c5cde8;
+            --shadow: 0 2px 12px rgba(79, 110, 247, 0.07);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 15px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏导航 */
+        .sidebar {
+            width: 240px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 24px 0;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            padding: 0 20px;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            padding: 10px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.18s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-nav a:hover {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .sidebar-nav a.active {
+            background: var(--accent-light);
+            color: var(--accent-hover);
+            border-left-color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* 主内容区 */
+        .content {
+            margin-left: 240px;
+            flex: 1;
+            padding: 48px 52px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--heading);
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        h1 .highlight {
+            color: var(--accent);
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--heading);
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--heading);
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+
+        h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--heading);
+            margin-bottom: 8px;
+        }
+
+        p {
+            font-size: 15px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+
+        /* 代码块 */
+        code {
+            font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+            font-size: 13px;
+            background: var(--tag-bg);
+            color: var(--text);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .code-block {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 24px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text);
+            font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+            margin: 12px 0;
+            box-shadow: var(--shadow);
+        }
+
+        .code-block code {
+            background: transparent;
+            color: var(--text);
+            padding: 0;
+        }
+
+        /* 步骤选择卡片 */
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin: 32px 0;
+        }
+
+        .step-card {
+            padding: 16px 20px;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            background: var(--content-bg);
+            font-weight: 650;
+            font-size: 14px;
+            color: var(--text-muted);
+            min-height: 54px;
+            box-shadow: 0 1px 0 rgba(17, 24, 39, 0.03);
+            outline: none;
+        }
+
+        .step-card:hover {
+            border-color: var(--accent);
+            background: var(--accent-light);
+            color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(79, 110, 247, 0.12);
+        }
+
+        .step-card:focus-visible {
+            box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.20);
+            border-color: var(--accent);
+        }
+
+        .step-card.active {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+            box-shadow: 0 8px 22px rgba(79, 110, 247, 0.22);
+        }
+
+        .step-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+            scroll-margin-top: 32px;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 模型阶段卡片 */
+        .model-stage {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--accent-light);
+            border-radius: 10px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .model-stage h4 {
+            color: var(--heading);
+            margin-bottom: 8px;
+        }
+
+        .model-stage p {
+            margin: 8px 0;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        /* 注意力网格：每个 token 一行，12 个头横向铺成热力带 */
+        .attention-grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 16px 0 0;
+        }
+
+        .token-attention {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--bg);
+            padding: 10px 14px;
+            border-radius: 8px;
+        }
+
+        .token-label {
+            width: 72px;
+            flex-shrink: 0;
+            text-align: left;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .heads-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .head-box {
+            width: 100%;
+            height: 24px;
+            min-width: 0;
+            background: #d4daf5; /* 由 JS 按权重覆盖为热力色 */
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .head-box:hover,
+        .head-box.active {
+            transform: translateY(-2px) scale(1.12);
+            box-shadow: 0 0 0 2px var(--accent), 0 6px 14px rgba(79, 110, 247, 0.30);
+            z-index: 2;
+        }
+
+        /* 注意力图例（左缘对齐方块带起点） */
+        .attn-legend {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0 4px;
+            padding-left: 100px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .attn-scale {
+            display: inline-block;
+            width: 120px;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, rgb(223, 227, 247), var(--accent));
+        }
+
+        /* 注意力权重浮层提示 */
+        .attn-tooltip {
+            position: fixed;
+            z-index: 9999;
+            background: var(--heading);
+            color: #ffffff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.5;
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 6px 18px rgba(26, 37, 64, 0.25);
+            display: none;
+        }
+        .attn-tooltip strong { color: #aecbff; }
+
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin: 24px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid var(--accent);
+            background: var(--accent);
+            color: #ffffff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: var(--content-bg);
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+
+        button.secondary:hover {
+            background: var(--accent-light);
+        }
+
+        /* 提示块 */
+        .callout {
+            background: var(--callout-bg);
+            border-left: 4px solid var(--callout-border);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .callout strong {
+            color: var(--accent);
+        }
+
+        /* 章节锚点偏移，避免贴顶 */
+        section[id],
+        .step-content {
+            scroll-margin-top: 32px;
+        }
+
+        /* 滚动条样式（Webkit）—— 规范：5px / var(--border) */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 24px;
+            }
+
+            .steps-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* 注意力网格窄屏适配：方块折为 6 列两行 */
+        @media (max-width: 520px) {
+            .token-label {
+                width: 56px;
+            }
+            .heads-grid {
+                grid-template-columns: repeat(6, minmax(0, 1fr));
+            }
+            .attn-legend {
+                padding-left: 84px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-title">内容导航</div>
+            <nav class="sidebar-nav">
+                <a href="#pipeline-intro" class="nav-link active">概述</a>
+                <a href="#step-1" class="nav-link">预处理</a>
+                <a href="#step-2" class="nav-link">模型计算</a>
+                <a href="#step-3" class="nav-link">后处理</a>
+                <a href="#example" class="nav-link">代码示例</a>
+            </nav>
+        </aside>
+        
+        <!-- 主内容 -->
+        <main class="content">
+            <!-- 标题 -->
+            <section id="pipeline-intro">
+                <h1>NLP <span class="highlight">Pipeline</span> 完整流程</h1>
+                <p class="subtitle">深入理解 Transformer 模型的三大处理步骤</p>
+                
+                <p>一个完整的 NLP 任务处理流程包含三个关键阶段：将原始文本转换为模型输入、通过神经网络计算、最后转换为可读结果。</p>
+            </section>
+            
+            <!-- 步骤选择 -->
+            <div class="steps-container">
+                <div class="step-card active" onclick="switchStep(0)">① 预处理</div>
+                <div class="step-card" onclick="switchStep(1)">② 模型计算</div>
+                <div class="step-card" onclick="switchStep(2)">③ 后处理</div>
+            </div>
+            
+            <!-- ===== 步骤1：预处理 ===== -->
+            <div class="step-content active" id="step-1">
+                <h2>第一步：预处理 (Tokenization)</h2>
+                <p>将原始文本转换为模型能理解的数字形式。</p>
+                
+                <h3>处理流程</h3>
+                <p><strong>输入：</strong> 文本字符串</p>
+                <div class="code-block">text = "I love this movie"
+</div>
+                
+                <p><strong>第1阶段 - 分词 (Tokenization)：</strong></p>
+                <p>将句子拆分成 tokens（词或子词）</p>
+                <div class="code-block">tokens = ["[CLS]", "I", "love", "this", "movie", "[SEP]"]
+
+# 长度：6 tokens</div>
+                
+                <p><strong>第2阶段 - ID 映射：</strong></p>
+                <p>将每个 token 转换为词汇表中的整数 ID</p>
+                <div class="code-block">input_ids = [101, 1045, 2572, 2054, 3007, 102]
+
+# 词汇量：30,522</div>
+                
+                <p><strong>第3阶段 - 张量转换：</strong></p>
+                <p>转换为 PyTorch 张量以供模型使用</p>
+                <div class="code-block">tensor_ids = torch.tensor([input_ids])
+
+# Shape: [1, 6]  (1个句子，6个tokens)</div>
+                
+                <div class="callout">
+                    <strong>关键概念：</strong><br>
+                    • <strong>[CLS]</strong> = Classification token，句子的特殊开始标记<br>
+                    • <strong>[SEP]</strong> = Separator token，句子结束标记<br>
+                    • <strong>Padding</strong> = 短句子填充到固定长度<br>
+                    • <strong>Attention mask</strong> = 标记有效token和填充token
+                </div>
+            </div>
+            
+            <!-- ===== 步骤2：模型计算 ===== -->
+            <div class="step-content" id="step-2">
+                <h2>第二步：模型计算 (Forward Pass)</h2>
+                <p>通过 Transformer 编码器逐层处理向量，提取语义特征。</p>
+                
+                <!-- 阶段1：Embedding -->
+                <div class="model-stage">
+                    <h4>① Token Embedding - 向量化</h4>
+                    <p>将整数 ID 转换为 768 维的密集向量</p>
+                    <div class="code-block"># 输入 (Input IDs)
+input_ids = [101, 1045, 2572, 2054, 3007, 102]
+# Shape: [1, 6]
+
+# Embedding 层映射
+embedded = embedding(input_ids)
+# Shape: [1, 6, 768]
+# 每个token变成768维向量</div>
+                    <p><strong>关键参数：</strong> 嵌入维度=768，词汇量=30,522</p>
+                    <p><strong>输出：</strong> 6 个 768 维向量的序列</p>
+                </div>
+                
+                <!-- 阶段2：Self-Attention -->
+                <div class="model-stage">
+                    <h4>② Self-Attention - 多头注意力</h4>
+                    <p>12 个注意力头并行学习 tokens 之间的依赖关系</p>
+                    <div class="code-block"># 输入
+x = [1, 6, 768]  # 6个token，每个768维
+
+# 12个并行注意力头
+# 每头处理 768/12 = 64 维
+attention_output = multi_head_attention(x)
+
+# Shape: [1, 6, 768] 维度保持不变
+# 每个token都关注其他所有tokens
+# 学习token间的语义关联</div>
+                    <p><strong>注意力头的作用：</strong></p>
+                    
+                    <div class="attention-grid-container">
+                        <div class="token-attention">
+                            <div class="token-label">Token 0: [CLS]</div>
+                            <div class="heads-grid">
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                                <div class="head-box" data-token="0"></div>
+                            </div>
+                        </div>
+                        <div class="token-attention">
+                            <div class="token-label">Token 1: I</div>
+                            <div class="heads-grid">
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                                <div class="head-box" data-token="1"></div>
+                            </div>
+                        </div>
+                        <div class="token-attention">
+                            <div class="token-label">Token 2: love</div>
+                            <div class="heads-grid">
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                                <div class="head-box" data-token="2"></div>
+                            </div>
+                        </div>
+                        <div class="token-attention">
+                            <div class="token-label">Token 3: movie</div>
+                            <div class="heads-grid">
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                                <div class="head-box" data-token="3"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p><strong>说明：</strong> 每个色块代表一个注意力头，<strong>颜色越深</strong>表示该头的注意力权重越大；鼠标悬停可查看具体权重数值。</p>
+                </div>
+                
+                <!-- 阶段3：Pooling -->
+                <div class="model-stage">
+                    <h4>③ Pooling - 序列汇聚</h4>
+                    <p>从 6 个 tokens 的矩阵中提取单个全局表示向量</p>
+                    <div class="code-block"># 输入 (Self-Attention后)
+x = [1, 6, 768]  # 6个tokens，每个768维
+
+# Pooling 操作：取 [CLS] token
+pooled = x[:, 0, :]  # 只取第1个token的向量
+# Shape: [1, 768]
+
+# [CLS] token聚合了全句的语义信息</div>
+                    <p><strong>为什么选 [CLS]？</strong></p>
+                    <p>Transformer 在预训练时已学会将 [CLS] token 用作整个句子的表示，它聚合了所有其他 tokens 通过自注意力传递来的信息。</p>
+                </div>
+                
+                <!-- 阶段4：Classifier -->
+                <div class="model-stage">
+                    <h4>④ Classification - 分类层</h4>
+                    <p>线性变换将 768 维向量映射到分类标签数</p>
+                    <div class="code-block"># 输入 (Pooled向量)
+pooled_output = [1, 768]
+
+# 分类层 (线性层)
+classifier = Linear(768, 2)
+# 2分类：NEGATIVE/POSITIVE
+logits = classifier(pooled_output)
+# Shape: [1, 2]
+
+# 输出示例
+logits = [-2.5, 3.2]
+# 正面分数远高于负面分数</div>
+                    <p><strong>参数量：</strong> 768 × 2 + 2 = 1,538 个参数</p>
+                    <p><strong>输出：</strong> 原始预测分数 (logits)，未经过概率转换</p>
+                </div>
+                
+                <div class="callout">
+                    <strong>完整路径：</strong> [101, 1045, ...] → 768维向量矩阵 → 注意力加权 → [CLS]表示向量 → 线性映射 → Logits [-2.5, 3.2]
+                </div>
+            </div>
+            
+            <!-- ===== 步骤3：后处理 ===== -->
+            <div class="step-content" id="step-3">
+                <h2>第三步：后处理 (Post-Processing)</h2>
+                <p>将模型的原始输出转换为人类可读的预测结果。</p>
+                
+                <div class="model-stage">
+                    <h4>① Logits - 原始分数</h4>
+                    <p>模型的直接输出，未经归一化</p>
+                    <div class="code-block">logits = [-2.5, 3.2]
+
+# logits[0] = NEGATIVE 的分数 = -2.5
+# logits[1] = POSITIVE 的分数 = 3.2</div>
+                </div>
+                
+                <div class="model-stage">
+                    <h4>② SoftMax - 概率转换</h4>
+                    <p>将 logits 转换为 0-1 范围的概率</p>
+                    <div class="code-block">import torch.nn.functional as F
+
+logits = tensor([-2.5, 3.2])
+probabilities = F.softmax(logits, dim=-1)
+
+# 计算过程
+e^(-2.5) = 0.082
+e^(3.2) = 24.533
+sum = 0.082 + 24.533 = 24.615
+
+# 归一化
+p_negative = 0.082 / 24.615 = 0.003  (0.3%)
+p_positive = 24.533 / 24.615 = 0.997  (99.7%)</div>
+                </div>
+                
+                <div class="model-stage">
+                    <h4>③ 取最大 & 映射标签</h4>
+                    <p>找最高概率的类别并映射到标签名称</p>
+                    <div class="code-block">probabilities = [0.003, 0.997]
+
+# 取最大值索引
+pred_idx = argmax(probabilities)  # 结果：1
+
+# 映射到标签
+id2label = {0: "NEGATIVE", 1: "POSITIVE"}
+label = id2label[pred_idx]  # "POSITIVE"
+confidence = probabilities[pred_idx]  # 0.997</div>
+                </div>
+                
+                <p><strong>最终输出：</strong></p>
+                <div class="code-block">result = {
+    'label': 'POSITIVE',
+    'score': 0.9973
+}</div>
+                
+                <div class="callout">
+                    <strong>解释：</strong> 模型以 99.73% 的置信度预测该评论为正面情感
+                </div>
+            </div>
+            
+            <!-- 代码示例 -->
+            <section id="example">
+                <h2>完整代码示例</h2>
+                
+                <h3>方式1：使用 Hugging Face Pipeline API (推荐)</h3>
+                <p>最简洁的方式，自动完成三个步骤：</p>
+                <div class="code-block">from transformers import pipeline
+
+# 初始化 pipeline
+classifier = pipeline("sentiment-analysis")
+
+# 执行完整流程
+# (预处理 → 模型计算 → 后处理)
+result = classifier("I love this movie")
+print(result)
+
+# 输出:
+# [{'label': 'POSITIVE', 'score': 0.9973}]</div>
+                
+                <h3>方式2：手动实现完整流程</h3>
+                <p>逐步控制每个阶段：</p>
+                <div class="code-block">from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification
+)
+import torch
+import torch.nn.functional as F
+
+# ========== 第一步：预处理 ==========
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+text = "I love this movie"
+inputs = tokenizer(text, return_tensors="pt")
+
+# ========== 第二步：模型计算 ==========
+model = AutoModelForSequenceClassification.from_pretrained(
+    "bert-base-uncased",
+    num_labels=2
+)
+outputs = model(**inputs)
+logits = outputs.logits
+# Shape: [1, 2], e.g., [[-2.5, 3.2]]
+
+# ========== 第三步：后处理 ==========
+probabilities = F.softmax(logits, dim=-1)
+pred_idx = torch.argmax(
+    probabilities, dim=-1
+)[0].item()
+confidence = probabilities[0][pred_idx].item()
+label = model.config.id2label[pred_idx]
+
+print(f"Label: {label}")
+print(f"Confidence: {confidence:.4f}")
+
+# 输出: Label: POSITIVE, Confidence: 0.9973</div>
+            </section>
+        </main>
+    </div>
+    
+    <script>
+        // 侧边栏导航高亮
+        const navLinks = document.querySelectorAll('.sidebar-nav a');
+        const sections = ['pipeline-intro', 'step-1', 'step-2', 'step-3', 'example'];
+        
+        window.addEventListener('scroll', () => {
+            let current = '';
+            for (let section of sections) {
+                const el = document.getElementById(section);
+                if (el && el.offsetTop - 200 <= window.scrollY) {
+                    current = section;
+                }
+            }
+            navLinks.forEach(link => link.classList.remove('active'));
+            const activeLink = document.querySelector(`.sidebar-nav a[href="#${current}"]`);
+            if (activeLink) activeLink.classList.add('active');
+        });
+        
+        // 导航链接点击
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                navLinks.forEach(l => l.classList.remove('active'));
+                e.target.classList.add('active');
+            });
+        });
+        
+        // 步骤卡片切换
+        function switchStep(index) {
+            const stepCards = document.querySelectorAll('.step-card');
+            const stepContents = document.querySelectorAll('.step-content');
+            
+            stepCards.forEach((card, i) => {
+                card.classList.toggle('active', i === index);
+            });
+            stepContents.forEach((content, i) => {
+                content.classList.toggle('active', i === index);
+            });
+            
+            // 平滑滚动到内容
+            stepContents[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        // 注意力头：权重热力图 + 悬停查看具体数值
+        (function () {
+            // 各 token 的基准注意力强度（教学示意值；"love" 为情感词，权重最高）
+            const BASE = { '[CLS]': 0.55, 'I': 0.30, 'love': 0.78, 'movie': 0.44 };
+
+            // 权重 -> 热力色：从浅蓝 rgb(223,227,247) 渐变到 --accent rgb(79,110,247)
+            function heatColor(w) {
+                const r = Math.round(223 + (79 - 223) * w);
+                const g = Math.round(227 + (110 - 227) * w);
+                const b = 247;
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            // 浮层提示
+            const tooltip = document.createElement('div');
+            tooltip.className = 'attn-tooltip';
+            document.body.appendChild(tooltip);
+
+            const TW = 170; // 提示框预估宽度，用于边界回弹
+
+            document.querySelectorAll('.token-attention').forEach(panel => {
+                const raw = (panel.querySelector('.token-label') || {}).textContent || '';
+                const name = raw.replace(/^Token\s*\d+\s*:\s*/, '').trim();
+                const base = Object.prototype.hasOwnProperty.call(BASE, name) ? BASE[name] : 0.4;
+
+                panel.querySelectorAll('.head-box').forEach((box, h) => {
+                    // 12 个头在基准上叠加正弦扰动，得到有区分度的权重分布
+                    const w = Math.max(0.05, Math.min(0.97, base + 0.30 * Math.sin(h * 1.3 + name.length)));
+                    box.style.background = heatColor(w);
+                    box.dataset.weight = w.toFixed(2);
+                    box.dataset.head = h;
+
+                    box.addEventListener('mouseenter', () => {
+                        box.classList.add('active');
+                        tooltip.innerHTML =
+                            `<strong>${name}</strong> · Head ${h + 1}<br>注意力权重：${w.toFixed(2)}`;
+                        tooltip.style.display = 'block';
+                    });
+                    box.addEventListener('mousemove', e => {
+                        let left = e.clientX + 14;
+                        if (left + TW > window.innerWidth) left = e.clientX - TW - 14;
+                        tooltip.style.left = left + 'px';
+                        tooltip.style.top = Math.max(8, e.clientY + 14) + 'px';
+                    });
+                    box.addEventListener('mouseleave', () => {
+                        box.classList.remove('active');
+                        tooltip.style.display = 'none';
+                    });
+                });
+            });
+
+            // 颜色图例
+            const grid = document.querySelector('.attention-grid-container');
+            if (grid && !document.querySelector('.attn-legend')) {
+                const legend = document.createElement('div');
+                legend.className = 'attn-legend';
+                legend.innerHTML = '<span>权重低</span><span class="attn-scale"></span><span>权重高</span>';
+                grid.parentNode.insertBefore(legend, grid.nextSibling);
+            }
+        })();
+    </script>
+<script>window.parent.postMessage({ action: "ready" }, "*"); 
+ 
+window.console = new Proxy(console, {
+  get(target, prop) {
+    if (['log', 'warn', 'error'].includes(prop)) {
+      return new Proxy(target[prop], {
+        apply(fn, thisArg, args) {
+          fn.apply(thisArg, args);
+          window.parent.postMessage({ action: 'console', 
+            type: prop, 
+            args: args.map((arg) => {
+              try {
+                return JSON.stringify(arg).replace(/^["']|["']$/g, '');
+              } catch (e) {
+                return arg;
+              }
+            }) 
+          }, '*');
+        }
+      });
+    }
+    return target[prop];
+  }
+});
+</script></body>
+</html>

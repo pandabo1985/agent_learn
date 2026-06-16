@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HuggingFace LLM Course — 第三章精读笔记</title>
+  <style>
+    /* ── CSS 变量（设计规范配色系统）── */
+    :root {
+      --bg:           #f5f6fa;
+      --sidebar-bg:   #ffffff;
+      --content-bg:   #ffffff;
+      --border:       #e2e6ed;
+      --text:         #2c3e50;
+      --text-muted:   #7f8c9a;
+      --accent:       #4f6ef7;
+      --accent-light: #eef1fe;
+      --accent-hover: #3a56e0;
+      --heading:      #1a2540;
+      --code-bg:      #f0f2f8;
+      --tag-bg:       #e8ecfd;
+      --tag-text:     #3a56e0;
+      --timeline-line:#c5cde8;
+      --shadow:       0 2px 12px rgba(79,110,247,0.07);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── 侧边栏（Fixed）── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 240px;
+      height: 100vh;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .logo-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .sidebar-logo .logo-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 12px;
+    }
+    nav::-webkit-scrollbar { width: 5px; }
+    nav::-webkit-scrollbar-track { background: transparent; }
+    nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .nav-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 8px;
+      margin-bottom: 6px;
+      margin-top: 8px;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px 7px 12px;
+      border-radius: 6px;
+      border-left: 3px solid transparent;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .18s;
+      margin-bottom: 2px;
+    }
+    .nav-link:hover {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .nav-link.active {
+      border-left-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .nav-link .nav-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      width: 18px;
+      flex-shrink: 0;
+    }
+    .nav-link.active .nav-num { color: var(--accent); }
+
+    /* ── 内容区 ── */
+    .content {
+      margin-left: 240px;
+      padding: 48px 52px;
+    }
+    .content-inner {
+      max-width: 900px;
+    }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 40px; }
+    .hero-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 640px;
+      margin-bottom: 20px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .hero-chip {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .03em;
+    }
+
+    /* ── 分割线 ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 40px 0;
+    }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 40px;
+      scroll-margin-top: 32px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .sec-num {
+      width: 44px;
+      height: 44px;
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .section h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .section h2 small {
+      font-size: .82rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-left: 8px;
+    }
+    .section h3 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: var(--heading);
+      margin: 22px 0 10px;
+    }
+    .section p { margin-bottom: 12px; }
+    .section p code, .section li code {
+      background: var(--code-bg);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: .88em;
+      color: var(--accent-hover);
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--content-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+    .card-lead {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 16px;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+    }
+    .card ul { padding-left: 18px; margin: 6px 0 12px; }
+    .card li { margin-bottom: 6px; }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 12px; }
+
+    /* ── Feature card ── */
+    .feat-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .feat-card h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 6px;
+    }
+    .feat-card p, .feat-card ul {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .feat-card ul { padding-left: 16px; }
+    .feat-card li { margin-bottom: 4px; }
+
+    /* ── Chip 标签 ── */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .03em;
+      margin: 3px;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      background: var(--accent-light);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .callout-icon { flex-shrink: 0; line-height: 1.7; }
+    .callout-body strong {
+      display: block;
+      color: var(--heading);
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+    .callout-body { color: var(--text-muted); }
+    .callout-warn    { background: #fffbeb; border-left-color: #f59e0b; }
+    .callout-danger  { background: #fff5f5; border-left-color: #ef4444; }
+    .callout-success { background: #f0fdf4; border-left-color: #22c55e; }
+
+    /* ── 时间线 ── */
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 4px; top: 8px; bottom: 8px;
+      width: 2px;
+      background: var(--timeline-line);
+    }
+    .tl-item {
+      position: relative;
+      padding-bottom: 20px;
+    }
+    .tl-item:last-child { padding-bottom: 0; }
+    .tl-dot {
+      position: absolute;
+      left: -28px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--accent);
+      outline: 3px solid var(--content-bg);
+    }
+    .tl-year {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+    .tl-title { font-size: 13px; font-weight: 600; color: var(--heading); }
+    .tl-desc  { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Code block ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      margin: 14px 0;
+      color: var(--text);
+    }
+    code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
+    .kw  { color: #7c3aed; font-weight: 600; }
+    .fn  { color: #0369a1; }
+    .str { color: #065f46; }
+    .cm  { color: var(--text-muted); font-style: italic; }
+    .num { color: #9d174d; }
+    .add { color: #16a34a; font-weight: 600; }
+    .del { color: #dc2626; font-weight: 600; }
+
+    /* ── 对比表格 ── */
+    .table-wrap {
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      margin: 16px 0;
+    }
+    .model-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .model-table th {
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: .03em;
+    }
+    .model-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .model-table tr:last-child td { border-bottom: none; }
+    .model-table tr:nth-child(even) td { background: var(--accent-light); }
+    .model-name { font-weight: 700; color: var(--heading); }
+
+    /* ── 层级 / 架构说明 ── */
+    .hierarchy {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      line-height: 2;
+      font-size: 13px;
+      padding: 12px 0;
+    }
+    .hier-root { color: var(--accent); font-weight: 700; }
+    .hier-l1   { padding-left: 20px; color: #2d6a4f; font-weight: 600; }
+    .hier-l2   { padding-left: 44px; color: var(--text-muted); }
+    .hier-l3   { padding-left: 68px; color: #a0aab8; }
+
+    /* ── token_type_ids 对齐示意 ── */
+    .tti {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 2;
+      margin: 14px 0;
+      overflow-x: auto;
+    }
+    .tti-row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+    .tok0 { background: #e3eafc; color: #1e3a8a; border-radius: 4px; padding: 1px 7px; }
+    .tok1 { background: #fde8e8; color: #9d174d; border-radius: 4px; padding: 1px 7px; }
+    .tok1b{ background: #fef3c7; color: #92400e; border-radius: 4px; padding: 1px 7px; }
+    .tti-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 4px; }
+    .tti-gap  { margin-top: 6px; }
+    .tti-note { font-size: 11px; color: var(--text-muted); }
+
+    /* ── 总结区域 ── */
+    .sum-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .sum-col {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .sum-col h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sum-col ul { padding-left: 16px; }
+    .sum-col li { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+
+    /* ── Pipeline 流程图（自绘）── */
+    .pipe-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 0;
+      margin: 16px 0 4px;
+    }
+    .pipe-step {
+      flex: 1 1 120px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      text-align: center;
+      position: relative;
+    }
+    .pipe-step.accent {
+      background: var(--accent-light);
+      border-color: var(--accent);
+    }
+    .pipe-emoji { font-size: 20px; margin-bottom: 4px; }
+    .pipe-step h5 { font-size: 12px; font-weight: 700; color: var(--heading); }
+    .pipe-step p  { font-size: 11px; color: var(--text-muted); margin: 4px 0 0; }
+    .pipe-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    /* ── 训练循环步骤图 ── */
+    .loop-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+    .loop-step {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .loop-step .ls-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: var(--accent);
+    }
+    .loop-step .ls-name {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--heading);
+      margin: 2px 0 4px;
+    }
+    .loop-step .ls-desc { font-size: 12px; color: var(--text-muted); }
+
+    /* ── Footer ── */
+    footer {
+      margin-left: 240px;
+      padding: 24px 52px;
+      border-top: 1px solid var(--border);
+      background: var(--sidebar-bg);
+      color: var(--text-muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { color: var(--accent-hover); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .content { margin-left: 0; padding: 24px 20px; }
+      footer   { margin-left: 0; padding: 20px; }
+      .pipe-arrow { transform: rotate(90deg); width: 100%; height: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ━━━ 侧边栏 ━━━ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-name">🤗 LLM Course</div>
+    <div class="logo-sub">第三章 · 7 节精读笔记</div>
+  </div>
+  <nav>
+    <div class="nav-section-label">目录</div>
+    <a class="nav-link" href="#s1"><span class="nav-num">01</span>本章简介</a>
+    <a class="nav-link" href="#s2"><span class="nav-num">02</span>加载数据集</a>
+    <a class="nav-link" href="#s3"><span class="nav-num">03</span>预处理与分词</a>
+    <a class="nav-link" href="#s4"><span class="nav-num">04</span>动态填充</a>
+    <a class="nav-link" href="#s5"><span class="nav-num">05</span>Trainer API 微调</a>
+    <a class="nav-link" href="#s6"><span class="nav-num">06</span>完整训练循环</a>
+    <a class="nav-link" href="#s7"><span class="nav-num">07</span>Accelerate 与总结</a>
+  </nav>
+</aside>
+
+<!-- ━━━ 内容区 ━━━ -->
+<div class="content">
+<div class="content-inner">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">HuggingFace · LLM Course · Chapter 3</div>
+    <h1>微调预训练模型<span>从数据集到训练循环全流程</span></h1>
+    <p class="hero-desc">第二章学会了「加载模型做预测」，本章解决「如何用<strong>自己的数据集</strong>微调」。从 Hub 加载 MRPC 数据集，到 <code>token_type_ids</code>、动态填充，再到高层 <code>Trainer</code> 与底层 PyTorch 训练循环，最后用 🤗 Accelerate 一键扩展到多 GPU/TPU。</p>
+    <div class="hero-meta">
+      <span class="hero-chip">7 节内容</span>
+      <span class="hero-chip">2 种训练方式</span>
+      <span class="hero-chip">动态填充</span>
+      <span class="hero-chip">整理于 2026-06-16</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ━━━ 01 本章简介 ━━━ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="sec-num">01</div>
+      <h2>本章简介 <small>从「预测」到「训练」</small></h2>
+    </div>
+
+    <div class="card">
+      <p class="card-lead">前两章我们用 Tokenizer + 预训练模型完成了推理。但仅用两三句话训练模型不会有好效果——本章教你加载真实数据集、微调出可用的模型。</p>
+      <h3>本章你将学到</h3>
+      <div class="grid-2">
+        <div class="feat-card">
+          <h4>📦 从 Hub 加载数据集</h4>
+          <p>不只是模型，模型中心还托管海量数据集。用 <code>datasets</code> 一行命令下载、缓存、划分 train/val/test。</p>
+        </div>
+        <div class="feat-card">
+          <h4>🎛️ 高层 Trainer API</h4>
+          <p>用 <code>Trainer</code> 几行代码完成微调，自动处理循环、评估、设备迁移。</p>
+        </div>
+        <div class="feat-card">
+          <h4>🔧 自定义训练循环</h4>
+          <p>脱离 Trainer，手写 PyTorch 训练循环，理解 forward / backward / step 每一步。</p>
+        </div>
+        <div class="feat-card">
+          <h4>⚡ 🤗 Accelerate</h4>
+          <p>几处改动即可让自定义循环在多个 GPU 或 TPU 上分布式运行。</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>贯穿全章的示例：MRPC 数据集</h3>
+    <p>MRPC（微软研究院释义语料库）由 <strong>5801 对句子</strong>组成，每对带一个标签表示两句话是否<strong>同义</strong>（paraphrase）。选它是因为<strong>数据量小</strong>、训练快，非常适合教学。它属于 GLUE 基准的 10 个子任务之一。</p>
+
+    <div class="pipe-flow">
+      <div class="pipe-step"><div class="pipe-emoji">📥</div><h5>原始数据</h5><p>5801 对句子</p></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step accent"><div class="pipe-emoji">✂️</div><h5>预处理</h5><p>tokenize + 动态填充</p></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step accent"><div class="pipe-emoji">🧠</div><h5>加载模型</h5><p>新分类头</p></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step accent"><div class="pipe-emoji">🔁</div><h5>训练微调</h5><p>Trainer / 手写循环</p></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="pipe-emoji">📊</div><h5>评估</h5><p>accuracy / f1</p></div>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body">
+        <strong>前置准备</strong>
+        先 <code>pip install datasets</code>（本章还会用到 <code>evaluate</code>、<code>accelerate</code>）。若要把训练好的权重上传到 Hub，需要一个 huggingface.co 账户。
+      </div>
+    </div>
+  </section>
+
+  <!-- ━━━ 02 加载数据集 ━━━ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="sec-num">02</div>
+      <h2>加载数据集 <small>load_dataset / DatasetDict</small></h2>
+    </div>
+
+    <p>🤗 Datasets 提供一条便捷命令，可在 Hub 上下载并缓存数据集：</p>
+<pre><span class="kw">from</span> datasets <span class="kw">import</span> load_dataset
+
+raw_datasets = load_dataset(<span class="str">"glue"</span>, <span class="str">"mrpc"</span>)
+raw_datasets</pre>
+
+    <p>返回的是一个 <code>DatasetDict</code>，内部含训练 / 验证 / 测试三个划分，每个划分 4 列：</p>
+<pre>DatasetDict({
+    train:      Dataset({ features: [<span class="str">'sentence1'</span>, <span class="str">'sentence2'</span>, <span class="str">'label'</span>, <span class="str">'idx'</span>], num_rows: <span class="num">3668</span> })
+    validation: Dataset({ features: [<span class="str">'sentence1'</span>, <span class="str">'sentence2'</span>, <span class="str">'label'</span>, <span class="str">'idx'</span>], num_rows: <span class="num">408</span>  })
+    test:       Dataset({ features: [<span class="str">'sentence1'</span>, <span class="str">'sentence2'</span>, <span class="str">'label'</span>, <span class="str">'idx'</span>], num_rows: <span class="num">1725</span> })
+})</pre>
+
+    <div class="callout">
+      <span class="callout-icon">💾</span>
+      <div class="callout-body">
+        <strong>缓存位置</strong>
+        默认下载到 <code>~/.cache/huggingface/datasets</code>；可用 <code>HF_HOME</code> 环境变量自定义（同第二章的模型缓存机制）。
+      </div>
+    </div>
+
+    <h3>查看单条样本与 features</h3>
+<pre>raw_train_dataset = raw_datasets[<span class="str">"train"</span>]
+raw_train_dataset[<span class="num">0</span>]
+<span class="cm"># {'idx': 0, 'label': 1,
+<span class="cm">#  'sentence1': 'Amrozi accused his brother ...',
+<span class="cm">#  'sentence2': 'Referring to him as only " the witness " ...'}</span></span></pre>
+    <p>标签已经是整数，无需再预处理。若想知道整数对应的真实含义，查看 <code>.features</code>：</p>
+<pre>raw_train_dataset.features[<span class="str">"label"</span>]
+<span class="cm"># ClassLabel(num_classes=2, names=['not_equivalent', 'equivalent'])</span>
+<span class="cm"># 0 → not_equivalent（非同义），1 → equivalent（同义）</span></pre>
+
+    <div class="grid-2">
+      <div class="feat-card">
+        <h4>🔢 ClassLabel</h4>
+        <p>建立整数 ↔ 类别的映射。<code>label</code> 已是整数，可直接喂给模型做训练。</p>
+      </div>
+      <div class="feat-card">
+        <h4>🗂️ Apache Arrow</h4>
+        <p>数据集以 Arrow 格式存于磁盘，按需加载到内存，不会一次性撑爆内存。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ━━━ 03 预处理与分词 ━━━ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="sec-num">03</div>
+      <h2>预处理与分词 <small>token_type_ids / map()</small></h2>
+    </div>
+
+    <p>要把文本转成模型能理解的数字（第二章已学）。本任务特殊之处：每个样本是<strong>一对句子</strong>，需让模型区分哪部分是第一句、哪部分是第二句。Tokenizer 支持直接输入<strong>句子对</strong>：</p>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer
+checkpoint = <span class="str">"bert-base-uncased"</span>
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+inputs = tokenizer(<span class="str">"This is the first sentence."</span>, <span class="str">"This is the second one."</span>)
+<span class="cm"># {'input_ids':      [101, 2023, ..., 1012, 102, 2023, ..., 1012, 102],
+<span class="cm">#  'token_type_ids': [0,   0,    ..., 0,    0,   1,    ..., 1,    1],
+<span class="cm">#  'attention_mask': [1,   1,    ..., 1,    1,   1,    ..., 1,    1]}</span></span></pre>
+
+    <h3>token_type_ids：第二章没讲的新字段</h3>
+    <p>它的作用是告诉模型「输入哪部分是第一句、哪部分是第二句」。把 <code>input_ids</code> 还原成 token 后，结构一目了然：</p>
+
+    <div class="tti">
+      <div class="tti-label">BERT 句子对格式：[CLS] 句子1 [SEP] 句子2 [SEP]</div>
+      <div class="tti-row">
+        <span class="tok0">[CLS]</span><span class="tok0">this</span><span class="tok0">is</span><span class="tok0">the</span><span class="tok0">first</span><span class="tok0">sentence</span><span class="tok0">.</span><span class="tok1b">[SEP]</span>
+        <span class="tok1">this</span><span class="tok1">is</span><span class="tok1">the</span><span class="tok1">second</span><span class="tok1">one</span><span class="tok1">.</span><span class="tok1b">[SEP]</span>
+      </div>
+      <div class="tti-row tti-gap">
+        <span class="tok0">0</span><span class="tok0">0</span><span class="tok0">0</span><span class="tok0">0</span><span class="tok0">0</span><span class="tok0">0</span><span class="tok0">0</span><span class="tok1b">0</span>
+        <span class="tok1">1</span><span class="tok1">1</span><span class="tok1">1</span><span class="tok1">1</span><span class="tok1">1</span><span class="tok1">1</span><span class="tok1b">1</span>
+        <span class="tti-note">← token_type_ids</span>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="callout-icon">💡</span>
+      <div class="callout-body">
+        <strong>不是所有模型都有 token_type_ids</strong>
+        它来自 BERT 预训练的「下一句预测（NSP）」任务。DistilBERT 就不会返回。只要 tokenizer 与模型来自同一 checkpoint，tokenizer 自己知道该提供什么，无需操心。
+      </div>
+    </div>
+
+    <h3>用 map() 处理整个数据集</h3>
+    <p>直接把整列句子喂给 tokenizer 虽可行，但会一次性把整个数据集读入内存。更好的做法是定义函数，配合 <code>Dataset.map()</code>：</p>
+<pre><span class="kw">def</span> <span class="fn">tokenize_function</span>(example):
+    <span class="kw">return</span> tokenizer(example[<span class="str">"sentence1"</span>], example[<span class="str">"sentence2"</span>], truncation=<span class="kw">True</span>)
+
+tokenized_datasets = raw_datasets.<span class="fn">map</span>(tokenize_function, batched=<span class="kw">True</span>)</pre>
+
+    <div class="grid-3">
+      <div class="feat-card"><h4>batched=True</h4><p>一次处理多个元素，配合 Rust 编写的快速 tokenizer，显著提速。</p></div>
+      <div class="feat-card"><h4>追加字段</h4><p>返回字典的 key（input_ids 等）会作为新列加入数据集，原列保留。</p></div>
+      <div class="feat-card"><h4>暂不 padding</h4><p>把全部样本填到最大长度很浪费——填充留到组 batch 时做。</p></div>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body">
+        <strong>关键决定：不在 tokenize_function 里 padding</strong>
+        在构建 batch 时才填充，只需补齐到「该 batch 的最大长度」，而非整个数据集的最大长度。这就是下一节的动态填充。
+      </div>
+    </div>
+  </section>
+
+  <!-- ━━━ 04 动态填充 ━━━ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="sec-num">04</div>
+      <h2>动态填充 <small>collate 函数 / DataCollatorWithPadding</small></h2>
+    </div>
+
+    <p>负责把一个 batch 里的数据整理成张量的函数叫 <code>collate 函数</code>。默认实现会把元素拼接成张量，但我们的句子长度不一，无法直接堆叠。于是<strong>刻意延迟填充</strong>，只在每个 batch 上补齐到该批最长：</p>
+
+    <div class="table-wrap">
+      <table class="model-table">
+        <thead>
+          <tr><th>策略</th><th>做法</th><th>代价</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model-name">一次性填充到最大长度</td>
+            <td>整个数据集都填到全局最长（或模型上限 512）</td>
+            <td>大量无用 token，浪费算力</td>
+          </tr>
+          <tr>
+            <td class="model-name">动态填充（推荐）</td>
+            <td>每个 batch 只补齐到该批最长</td>
+            <td>大幅节省时间；但张量形状逐批变化</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>🤗 Transformers 用 <code>DataCollatorWithPadding</code> 直接提供这个函数，只需传入 tokenizer（它要知道用哪个 pad token、左填还是右填）：</p>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> DataCollatorWithPadding
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)</pre>
+
+    <h3>验证动态填充效果</h3>
+    <p>抽 8 个样本，去掉字符串列（无法转张量），看各样本原始长度，再过一遍 collator：</p>
+<pre>samples = tokenized_datasets[<span class="str">"train"</span>][:<span class="num">8</span>]
+samples = {k: v <span class="kw">for</span> k, v <span class="kw">in</span> samples.items() <span class="kw">if</span> k <span class="kw">not in</span> [<span class="str">"idx"</span>, <span class="str">"sentence1"</span>, <span class="str">"sentence2"</span>]}
+[<span class="fn">len</span>(x) <span class="kw">for</span> x <span class="kw">in</span> samples[<span class="str">"input_ids"</span>]]
+<span class="cm"># [50, 59, 47, 67, 59, 50, 62, 32]  ← 长度 32 到 67 不等</span>
+
+batch = data_collator(samples)
+{k: v.shape <span class="kw">for</span> k, v <span class="kw">in</span> batch.items()}
+<span class="cm"># {'attention_mask': torch.Size([8, 67]),   ← 全部补齐到 67（本批最大）
+<span class="cm">#  'input_ids':      torch.Size([8, 67]),
+<span class="cm">#  'token_type_ids': torch.Size([8, 67]),
+<span class="cm">#  'labels':         torch.Size([8])}        ← 注意：data_collator 还把 label 改名为 labels</span></span></pre>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body">
+        <strong>TPU 特例</strong>
+        动态填充让张量形状逐批变化，但 TPU 偏好固定形状。在 TPU 上建议改用 <code>padding="max_length"</code> + <code>max_length</code>，即便要填一些无用 token。
+      </div>
+    </div>
+
+    <p>至此，原始文本已转化为模型可处理的数据，可以开始微调了。</p>
+  </section>
+
+  <!-- ━━━ 05 Trainer API 微调 ━━━ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="sec-num">05</div>
+      <h2>Trainer API 微调 <small>高层封装 / compute_metrics</small></h2>
+    </div>
+
+    <p>🤗 Transformers 的 <code>Trainer</code> 帮你在数据集上微调任意预训练模型。完成预处理后，定义 Trainer 只需三步：</p>
+
+    <h3>① TrainingArguments —— 所有超参数</h3>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> TrainingArguments
+training_args = TrainingArguments(<span class="str">"test-trainer"</span>)  <span class="cm"># 参数=保存模型与 checkpoint 的目录</span></pre>
+
+    <h3>② 加载模型（替换分类头）</h3>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForSequenceClassification
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=<span class="num">2</span>)</pre>
+
+    <div class="callout callout-danger">
+      <span class="callout-icon">🐞</span>
+      <div class="callout-body">
+        <strong>会收到警告——这是正常的！</strong>
+        BERT 没有针对「句子对分类」预训练过，所以<strong>预训练的旧 head 被丢弃</strong>，换上一个适合序列分类的<strong>新头（随机初始化）</strong>。警告说明：旧 head 权重未使用、新 head 权重随机初始化。这正是「微调」的起点。
+      </div>
+    </div>
+
+    <h3>③ 组装 Trainer 并训练</h3>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> Trainer
+
+trainer = Trainer(
+    model, training_args,
+    train_dataset=tokenized_datasets[<span class="str">"train"</span>],
+    eval_dataset=tokenized_datasets[<span class="str">"validation"</span>],
+    data_collator=data_collator,
+    tokenizer=tokenizer,
+)
+trainer.train()</pre>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-body">
+        <strong>第一次训练看不到指标？</strong>
+        默认每 500 步只报告训练 loss。要看到性能，需：① 设 <code>evaluation_strategy="epoch"</code> 让它评估；② 提供 <code>compute_metrics</code> 函数（否则只报 loss，不直观）。
+      </div>
+    </div>
+
+    <h3>④ 构造 compute_metrics()</h3>
+    <p>该函数接收 <code>EvalPrediction</code>（含 <code>predictions</code> 与 <code>label_ids</code>），返回「指标名 → 值」的字典。先看模型预测结果：</p>
+<pre>predictions = trainer.predict(tokenized_datasets[<span class="str">"validation"</span>])
+<span class="cm"># 返回 (predictions, label_ids, metrics)；predictions 形状 408×2（408 样本 × 2 标签的 logits）</span>
+
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+preds = np.argmax(predictions.predictions, axis=-<span class="num">1</span>)  <span class="cm"># 取每行最大值的索引 → 预测类别</span></pre>
+
+<pre><span class="kw">import</span> evaluate
+<span class="kw">def</span> <span class="fn">compute_metrics</span>(eval_preds):
+    metric = evaluate.load(<span class="str">"glue"</span>, <span class="str">"mrpc"</span>)
+    logits, labels = eval_preds
+    predictions = np.argmax(logits, axis=-<span class="num">1</span>)
+    <span class="kw">return</span> metric.compute(predictions=predictions, references=labels)
+
+<span class="cm"># 返回 {'accuracy': 0.858, 'f1': 0.900} —— 与 BERT 论文基础模型 F1=88.9 相当或更好</span></pre>
+
+    <p>把 <code>compute_metrics</code> 传入新的 Trainer，并设 <code>evaluation_strategy="epoch"</code>，每个 epoch 结束就会报告验证 loss 与指标。</p>
+
+    <div class="callout callout-success">
+      <span class="callout-icon">🔑</span>
+      <div class="callout-body">
+        <strong>小贴士</strong>
+        重新训练前要<strong>新建模型</strong>，否则会在已训练过的模型上继续训。Trainer 支持多 GPU/TPU 与混合精度（<code>fp16=True</code>），更多选项在第十章展开。
+      </div>
+    </div>
+  </section>
+
+  <!-- ━━━ 06 完整训练循环 ━━━ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="sec-num">06</div>
+      <h2>完整训练循环 <small>不用 Trainer，手写 PyTorch</small></h2>
+    </div>
+
+    <p>现在脱离 <code>Trainer</code>，用原生 PyTorch 实现同样的训练效果。这要求我们手动完成 Trainer 自动处理的三件事。</p>
+
+    <h3>① 数据后处理 + DataLoader</h3>
+<pre>tokenized_datasets = tokenized_datasets.remove_columns([<span class="str">"sentence1"</span>, <span class="str">"sentence2"</span>, <span class="str">"idx"</span>])
+tokenized_datasets = tokenized_datasets.rename_column(<span class="str">"label"</span>, <span class="str">"labels"</span>)  <span class="cm"># 模型默认输入叫 labels</span>
+tokenized_datasets.set_format(<span class="str">"torch"</span>)  <span class="cm"># 返回 PyTorch 张量而非列表</span>
+<span class="cm"># 现在只剩：['attention_mask', 'input_ids', 'labels', 'token_type_ids']</span>
+
+<span class="kw">from</span> torch.utils.data <span class="kw">import</span> DataLoader
+train_dataloader = DataLoader(tokenized_datasets[<span class="str">"train"</span>], shuffle=<span class="kw">True</span>, batch_size=<span class="num">8</span>, collate_fn=data_collator)
+eval_dataloader   = DataLoader(tokenized_datasets[<span class="str">"validation"</span>], batch_size=<span class="num">8</span>, collate_fn=data_collator)</pre>
+
+    <h3>② 模型 + 优化器 + 学习率调度器</h3>
+<pre><span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForSequenceClassification, get_scheduler
+<span class="kw">from</span> torch.optim <span class="kw">import</span> AdamW
+
+model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=<span class="num">2</span>)
+optimizer = AdamW(model.parameters(), lr=<span class="num">5e-5</span>)  <span class="cm"># Adam + 解耦权重衰减</span>
+
+num_epochs = <span class="num">3</span>
+num_training_steps = num_epochs * <span class="fn">len</span>(train_dataloader)
+lr_scheduler = get_scheduler(<span class="str">"linear"</span>, optimizer=optimizer,
+                             num_warmup_steps=<span class="num">0</span>, num_training_steps=num_training_steps)
+<span class="cm"># 默认调度：学习率从最大值（5e-5）线性衰减到 0</span></pre>
+
+    <div class="callout">
+      <span class="callout-icon">📐</span>
+      <div class="callout-body">
+        <strong>当输入含 labels 时，模型直接返回 loss</strong>
+        <code>outputs = model(**batch)</code> 会得到 <code>outputs.loss</code> 和 <code>outputs.logits</code>（形状 8×2）。所以训练循环里不必自己算损失。
+      </div>
+    </div>
+
+    <h3>③ 训练循环：每个 batch 的四步</h3>
+    <div class="loop-steps">
+      <div class="loop-step"><div class="ls-num">STEP 1</div><div class="ls-name">outputs = model(**batch)</div><div class="ls-desc">前向传播，得 loss + logits</div></div>
+      <div class="loop-step"><div class="ls-num">STEP 2</div><div class="ls-name">loss.backward()</div><div class="ls-desc">反向传播，计算梯度</div></div>
+      <div class="loop-step"><div class="ls-num">STEP 3</div><div class="ls-name">optimizer.step()</div><div class="ls-desc">用梯度更新权重</div></div>
+      <div class="loop-step"><div class="ls-num">STEP 4</div><div class="ls-name">optimizer.zero_grad()</div><div class="ls-desc">清空梯度，防累积</div></div>
+    </div>
+<pre><span class="kw">import</span> torch
+<span class="kw">from</span> tqdm.auto <span class="kw">import</span> tqdm
+
+device = torch.device(<span class="str">"cuda"</span>) <span class="kw">if</span> torch.cuda.is_available() <span class="kw">else</span> torch.device(<span class="str">"cpu"</span>)
+model.to(device)
+progress_bar = tqdm(<span class="fn">range</span>(num_training_steps))
+
+model.train()
+<span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(num_epochs):
+    <span class="kw">for</span> batch <span class="kw">in</span> train_dataloader:
+        batch = {k: v.to(device) <span class="kw">for</span> k, v <span class="kw">in</span> batch.items()}
+        outputs = model(**batch)
+        loss = outputs.loss
+        loss.backward()
+
+        optimizer.step()
+        lr_scheduler.step()       <span class="cm"># 别忘了更新学习率</span>
+        optimizer.zero_grad()
+        progress_bar.update(<span class="num">1</span>)</pre>
+
+    <h3>④ 评估循环</h3>
+    <p>用 🤗 Evaluate 累积所有 batch 的预测，最后一次性算指标：</p>
+<pre><span class="kw">import</span> evaluate
+metric = evaluate.load(<span class="str">"glue"</span>, <span class="str">"mrpc"</span>)
+
+model.eval()
+<span class="kw">for</span> batch <span class="kw">in</span> eval_dataloader:
+    batch = {k: v.to(device) <span class="kw">for</span> k, v <span class="kw">in</span> batch.items()}
+    <span class="kw">with</span> torch.no_grad():                  <span class="cm"># 评估不计算梯度</span>
+        outputs = model(**batch)
+    logits = outputs.logits
+    predictions = torch.argmax(logits, dim=-<span class="num">1</span>)
+    metric.add_batch(predictions=predictions, references=batch[<span class="str">"labels"</span>])
+
+metric.compute()
+<span class="cm"># {'accuracy': 0.843, 'f1': 0.891}</span></pre>
+  </section>
+
+  <!-- ━━━ 07 Accelerate 与总结 ━━━ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="sec-num">07</div>
+      <h2>Accelerate 与总结 <small>分布式训练 / 本章回顾</small></h2>
+    </div>
+
+    <p>上面的循环只在单 CPU/GPU 跑。借助 🤗 Accelerate，几处改动就能扩展到多 GPU / TPU：</p>
+
+    <h3>三处关键改动</h3>
+<pre><span class="add">+ from accelerate import Accelerator</span>
+  <span class="cm">...</span>
+<span class="add">+ accelerator = Accelerator()</span>   <span class="cm"># 探测环境，初始化分布式设置</span>
+
+  model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=<span class="num">2</span>)
+  optimizer = AdamW(model.parameters(), lr=<span class="num">3e-5</span>)
+
+<span class="del">- device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")</span>
+<span class="del">- model.to(device)</span>
+<span class="add">+ train_dl, eval_dl, model, optimizer = accelerator.prepare(</span>
+<span class="add">+     train_dataloader, eval_dataloader, model, optimizer)</span>   <span class="cm"># 用适当容器包装</span>
+
+  <span class="cm">...</span>
+  <span class="kw">for</span> batch <span class="kw">in</span> train_dl:
+<span class="del">-     batch = {k: v.to(device) for k, v in batch.items()}</span>   <span class="cm"># Accelerate 已托管设备迁移</span>
+      outputs = model(**batch)
+      loss = outputs.loss
+<span class="del">-     loss.backward()</span>
+<span class="add">+     accelerator.backward(loss)</span>   <span class="cm"># 替换为 accelerate 版反向传播</span></pre>
+
+    <div class="grid-3">
+      <div class="feat-card"><h4>① 实例化 Accelerator</h4><p>自动探测环境并初始化分布式设置。</p></div>
+      <div class="feat-card"><h4>② accelerator.prepare()</h4><p>把 DataLoader / model / optimizer 包装进合适的容器。</p></div>
+      <div class="feat-card"><h4>③ accelerator.backward()</h4><p>替换 loss.backward()，接管跨设备梯度同步。</p></div>
+    </div>
+
+    <div class="callout">
+      <span class="callout-icon">🚀</span>
+      <div class="callout-body">
+        <strong>运行方式</strong>
+        把脚本存为 <code>train.py</code>，用 <code>accelerate launch train.py</code> 启动分布式训练（首次会问几个配置问题）。Notebook 里可用 <code>notebook_launcher(training_function)</code>。
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card">
+      <p class="card-lead">回顾本章，你已经走完了从「原始数据集」到「可评估微调模型」的完整链路，并掌握了高层 Trainer 与底层手写循环两条路径。</p>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 01</div>
+        <div class="tl-title">从 Hub 加载与浏览数据集</div>
+        <div class="tl-desc">load_dataset / DatasetDict / ClassLabel / Arrow 缓存</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 02</div>
+        <div class="tl-title">句子对预处理</div>
+        <div class="tl-desc">[CLS] s1 [SEP] s2 [SEP]、token_type_ids、map(batched=True)</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 03</div>
+        <div class="tl-title">动态填充</div>
+        <div class="tl-desc">collate 函数、DataCollatorWithPadding、逐批补齐</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 04</div>
+        <div class="tl-title">Trainer API 微调 + 评估</div>
+        <div class="tl-desc">TrainingArguments、新分类头、compute_metrics、evaluate.load</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-year">能力 05</div>
+        <div class="tl-title">手写训练循环与分布式</div>
+        <div class="tl-desc">forward/backward/step/zero_grad、AdamW、get_scheduler、Accelerate</div>
+      </div>
+    </div>
+
+    <div class="sum-row">
+      <div class="sum-col">
+        <h4>📦 核心类</h4>
+        <ul>
+          <li><code>load_dataset</code> / <code>DatasetDict</code></li>
+          <li><code>DataCollatorWithPadding</code></li>
+          <li><code>TrainingArguments</code> / <code>Trainer</code></li>
+          <li><code>AutoModelForSequenceClassification</code></li>
+          <li><code>Accelerator</code></li>
+        </ul>
+      </div>
+      <div class="sum-col">
+        <h4>⚙️ 核心方法</h4>
+        <ul>
+          <li><code>Dataset.map(fn, batched=True)</code></li>
+          <li><code>set_format("torch")</code> / <code>rename_column</code></li>
+          <li><code>trainer.predict()</code> / <code>compute_metrics</code></li>
+          <li><code>get_scheduler("linear", ...)</code></li>
+          <li><code>accelerator.prepare()</code> / <code>.backward()</code></li>
+        </ul>
+      </div>
+      <div class="sum-col">
+        <h4>🔑 关键概念</h4>
+        <ul>
+          <li>token_type_ids（区分句子对）</li>
+          <li>动态填充（逐 batch 补齐）</li>
+          <li>替换分类头（丢弃旧 head）</li>
+          <li>logits → argmax → 预测类别</li>
+          <li>两条路径：Trainer / 手写循环</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+</div>
+
+<!-- ━━━ Footer ━━━ -->
+<footer>
+  <span>🤗 Transformers · 第三章精读笔记 · 基于官方 LLM Course 中文版整理</span>
+  <a href="https://huggingface.co/learn/llm-course/zh-CN/chapter3/1" target="_blank" rel="noopener">查看原文 →</a>
+</footer>
+
+<script>
+  const links    = document.querySelectorAll('.nav-link');
+  const sections = document.querySelectorAll('.section');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const match = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+        if (match) match.classList.add('active');
+      }
+    });
+  }, { threshold: 0.4 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
