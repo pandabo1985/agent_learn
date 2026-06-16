@@ -161,6 +161,7 @@
             border-radius: 10px;
             padding: 20px 24px;
             overflow-x: auto;
+            white-space: pre-wrap;
             font-size: 13px;
             line-height: 1.6;
             color: var(--text);
@@ -174,6 +175,13 @@
             color: var(--text);
             padding: 0;
         }
+
+        /* 语法高亮配色（参考 hf_llm_course_chapter3.html） */
+        .code-block .kw  { color: #7c3aed; font-weight: 600; }              /* 关键字 */
+        .code-block .fn  { color: #0369a1; }                                 /* 函数名 */
+        .code-block .str { color: #065f46; }                                 /* 字符串 */
+        .code-block .cm  { color: var(--text-muted); font-style: italic; }  /* 注释 */
+        .code-block .num { color: #9d174d; }                                 /* 数字 */
 
         /* 步骤选择卡片 */
         .steps-container {
@@ -529,14 +537,14 @@
                 <div class="model-stage">
                     <h4>① Token Embedding - 向量化</h4>
                     <p>将整数 ID 转换为 768 维的密集向量</p>
-                    <div class="code-block"># 输入 (Input IDs)
-input_ids = [101, 1045, 2572, 2054, 3007, 102]
-# Shape: [1, 6]
+                    <div class="code-block"><span class="cm"># 输入 (Input IDs)</span>
+input_ids = [<span class="num">101</span>, <span class="num">1045</span>, <span class="num">2572</span>, <span class="num">2054</span>, <span class="num">3007</span>, <span class="num">102</span>]
+<span class="cm"># Shape: [1, 6]</span>
 
-# Embedding 层映射
-embedded = embedding(input_ids)
-# Shape: [1, 6, 768]
-# 每个token变成768维向量</div>
+<span class="cm"># Embedding 层映射</span>
+embedded = <span class="fn">embedding</span>(input_ids)
+<span class="cm"># Shape: [1, 6, 768]</span>
+<span class="cm"># 每个token变成768维向量</span></div>
                     <p><strong>关键参数：</strong> 嵌入维度=768，词汇量=30,522</p>
                     <p><strong>输出：</strong> 6 个 768 维向量的序列</p>
                 </div>
@@ -545,16 +553,16 @@ embedded = embedding(input_ids)
                 <div class="model-stage">
                     <h4>② Self-Attention - 多头注意力</h4>
                     <p>12 个注意力头并行学习 tokens 之间的依赖关系</p>
-                    <div class="code-block"># 输入
-x = [1, 6, 768]  # 6个token，每个768维
+                    <div class="code-block"><span class="cm"># 输入</span>
+x = [<span class="num">1</span>, <span class="num">6</span>, <span class="num">768</span>]  <span class="cm"># 6个token，每个768维</span>
 
-# 12个并行注意力头
-# 每头处理 768/12 = 64 维
-attention_output = multi_head_attention(x)
+<span class="cm"># 12个并行注意力头</span>
+<span class="cm"># 每头处理 768/12 = 64 维</span>
+attention_output = <span class="fn">multi_head_attention</span>(x)
 
-# Shape: [1, 6, 768] 维度保持不变
-# 每个token都关注其他所有tokens
-# 学习token间的语义关联</div>
+<span class="cm"># Shape: [1, 6, 768] 维度保持不变</span>
+<span class="cm"># 每个token都关注其他所有tokens</span>
+<span class="cm"># 学习token间的语义关联</span></div>
                     <p><strong>注意力头的作用：</strong></p>
                     
                     <div class="attention-grid-container">
@@ -635,14 +643,14 @@ attention_output = multi_head_attention(x)
                 <div class="model-stage">
                     <h4>③ Pooling - 序列汇聚</h4>
                     <p>从 6 个 tokens 的矩阵中提取单个全局表示向量</p>
-                    <div class="code-block"># 输入 (Self-Attention后)
-x = [1, 6, 768]  # 6个tokens，每个768维
+                    <div class="code-block"><span class="cm"># 输入 (Self-Attention后)</span>
+x = [<span class="num">1</span>, <span class="num">6</span>, <span class="num">768</span>]  <span class="cm"># 6个tokens，每个768维</span>
 
-# Pooling 操作：取 [CLS] token
-pooled = x[:, 0, :]  # 只取第1个token的向量
-# Shape: [1, 768]
+<span class="cm"># Pooling 操作：取 [CLS] token</span>
+pooled = x[:, <span class="num">0</span>, :]  <span class="cm"># 只取第1个token的向量</span>
+<span class="cm"># Shape: [1, 768]</span>
 
-# [CLS] token聚合了全句的语义信息</div>
+<span class="cm"># [CLS] token聚合了全句的语义信息</span></div>
                     <p><strong>为什么选 [CLS]？</strong></p>
                     <p>Transformer 在预训练时已学会将 [CLS] token 用作整个句子的表示，它聚合了所有其他 tokens 通过自注意力传递来的信息。</p>
                 </div>
@@ -651,18 +659,18 @@ pooled = x[:, 0, :]  # 只取第1个token的向量
                 <div class="model-stage">
                     <h4>④ Classification - 分类层</h4>
                     <p>线性变换将 768 维向量映射到分类标签数</p>
-                    <div class="code-block"># 输入 (Pooled向量)
-pooled_output = [1, 768]
+                    <div class="code-block"><span class="cm"># 输入 (Pooled向量)</span>
+pooled_output = [<span class="num">1</span>, <span class="num">768</span>]
 
-# 分类层 (线性层)
-classifier = Linear(768, 2)
-# 2分类：NEGATIVE/POSITIVE
-logits = classifier(pooled_output)
-# Shape: [1, 2]
+<span class="cm"># 分类层 (线性层)</span>
+classifier = <span class="fn">Linear</span>(<span class="num">768</span>, <span class="num">2</span>)
+<span class="cm"># 2分类：NEGATIVE/POSITIVE</span>
+logits = <span class="fn">classifier</span>(pooled_output)
+<span class="cm"># Shape: [1, 2]</span>
 
-# 输出示例
-logits = [-2.5, 3.2]
-# 正面分数远高于负面分数</div>
+<span class="cm"># 输出示例</span>
+logits = [<span class="num">-2.5</span>, <span class="num">3.2</span>]
+<span class="cm"># 正面分数远高于负面分数</span></div>
                     <p><strong>参数量：</strong> 768 × 2 + 2 = 1,538 个参数</p>
                     <p><strong>输出：</strong> 原始预测分数 (logits)，未经过概率转换</p>
                 </div>
