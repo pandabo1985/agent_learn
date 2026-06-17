@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 学习工作区 · 目录</title>
+    <style>
+        /* ========== 设计系统：配色变量（沿用 设计规范.md） ========== */
+        :root {
+            --bg: #f5f6fa;
+            --content-bg: #ffffff;
+            --border: #e2e6ed;
+            --text: #2c3e50;
+            --text-muted: #7f8c9a;
+            --accent: #4f6ef7;
+            --accent-light: #eef1fe;
+            --accent-hover: #3a56e0;
+            --heading: #1a2540;
+            --code-bg: #f0f2f8;
+            --tag-bg: #e8ecfd;
+            --tag-text: #3a56e0;
+            --shadow: 0 2px 12px rgba(79,110,247,0.07);
+            --shadow-hover: 0 8px 24px rgba(79,110,247,0.16);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text);
+            background-color: var(--bg);
+        }
+
+        .wrap {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 56px 32px 80px;
+        }
+
+        /* ========== 头部 ========== */
+        .hero {
+            margin-bottom: 36px;
+        }
+        .hero .logo {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--heading);
+            line-height: 1.25;
+            margin-bottom: 12px;
+        }
+        h1 .accent { color: var(--accent); }
+        .hero p {
+            color: var(--text-muted);
+            font-size: 15px;
+            max-width: 640px;
+        }
+
+        /* ========== 运行提示 callout ========== */
+        .callout {
+            background: var(--accent-light);
+            border-left: 4px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 14px 18px;
+            margin: 24px 0 40px;
+            font-size: 14px;
+            color: var(--accent);
+        }
+        .callout code {
+            background: rgba(79,110,247,0.12);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 13px;
+        }
+
+        /* ========== 分组 ========== */
+        .group { margin-bottom: 40px; }
+        .group-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--heading);
+            margin-bottom: 18px;
+        }
+        .group-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        /* ========== 卡片网格 ========== */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: var(--content-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 22px;
+            box-shadow: var(--shadow);
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.18s ease;
+            position: relative;
+        }
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+        .card .icon {
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+        .card .title {
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: var(--heading);
+            line-height: 1.4;
+        }
+        .card .desc {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            flex: 1;
+        }
+        .card .open {
+            margin-top: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .chip {
+            display: inline-block;
+            background: var(--tag-bg);
+            color: var(--tag-text);
+            padding: 3px 11px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            align-self: flex-start;
+        }
+
+        footer {
+            margin-top: 48px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            .wrap { padding: 36px 18px 60px; }
+            h1 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <header class="hero">
+            <div class="logo">AI Learning Workspace</div>
+            <h1>AI 学习<span class="accent">工作区</span>目录</h1>
+            <p>这里是所有教学与演示页面的入口。点击任意卡片即可打开对应页面。</p>
+        </header>
+
+        <div class="callout">
+            💡 <strong>本地预览</strong>：部分页面含内联脚本，建议用本地服务器打开：<br>
+            <code>python3 -m http.server 8000</code>，然后访问 <code>http://localhost:8000/</code>
+        </div>
+
+        <!-- Transformer 注意力系列 -->
+        <section class="group">
+            <div class="group-title">Transformer 注意力系列</div>
+            <div class="grid">
+                <a class="card" href="Transformer%20QKV%20注意力机制动画演示.html">
+                    <span class="icon">🔢</span>
+                    <span class="chip">注意力 · 数值拆解</span>
+                    <div class="title">Transformer QKV 注意力机制动画演示</div>
+                    <div class="desc">逐步拆解 Q·K·V 的注意力计算，含完整 3×3 注意力矩阵全貌对比。</div>
+                    <div class="open">打开 →</div>
+                </a>
+                <a class="card" href="transformer_animation.html">
+                    <span class="icon">⚙️</span>
+                    <span class="chip">架构 · 动画</span>
+                    <div class="title">Transformer 工作原理 · 动画演示</div>
+                    <div class="desc">Transformer 整体架构与数据流动的动画讲解。</div>
+                    <div class="open">打开 →</div>
+                </a>
+                <a class="card" href="注意力机制讲解.html">
+                    <span class="icon">🎯</span>
+                    <span class="chip">原理讲解</span>
+                    <div class="title">注意力机制讲解</div>
+                    <div class="desc">注意力机制的原理与直觉讲解。</div>
+                    <div class="open">打开 →</div>
+                </a>
+            </div>
+        </section>
+
+        <!-- HuggingFace LLM 课程 -->
+        <section class="group">
+            <div class="group-title">HuggingFace LLM Course 精读</div>
+            <div class="grid">
+                <a class="card" href="hf_llm_course_chapter1.html">
+                    <span class="icon">📖</span>
+                    <span class="chip">第一章</span>
+                    <div class="title">第一章精读笔记</div>
+                    <div class="desc">HuggingFace LLM Course 第一章要点梳理。</div>
+                    <div class="open">打开 →</div>
+                </a>
+                <a class="card" href="hf_llm_course_chapter2.html">
+                    <span class="icon">📖</span>
+                    <span class="chip">第二章</span>
+                    <div class="title">第二章精读笔记</div>
+                    <div class="desc">HuggingFace LLM Course 第二章要点梳理。</div>
+                    <div class="open">打开 →</div>
+                </a>
+                <a class="card" href="hf_llm_course_chapter3.html">
+                    <span class="icon">📖</span>
+                    <span class="chip">第三章</span>
+                    <div class="title">第三章精读笔记</div>
+                    <div class="desc">HuggingFace LLM Course 第三章要点梳理。</div>
+                    <div class="open">打开 →</div>
+                </a>
+            </div>
+        </section>
+
+        <!-- NLP 基础 -->
+        <section class="group">
+            <div class="group-title">NLP 基础</div>
+            <div class="grid">
+                <a class="card" href="Pipeline%E6%B5%81%E7%A8%8B%E5%8A%A8%E7%94%BB%E6%BC%94%E7%A4%BA.html">
+                    <span class="icon">🔁</span>
+                    <span class="chip">Pipeline · 动画</span>
+                    <div class="title">NLP Pipeline 完整流程演示</div>
+                    <div class="desc">HuggingFace transformers Pipeline 从输入到输出的流程动画。</div>
+                    <div class="open">打开 →</div>
+                </a>
+                <a class="card" href="AI%E6%A6%82%E5%BF%B5%E5%85%B3%E7%B3%BB%E8%AE%B2%E8%A7%A3.html">
+                    <span class="icon">🧠</span>
+                    <span class="chip">概念图解</span>
+                    <div class="title">AI 概念关系讲解</div>
+                    <div class="desc">AI / ML / DL 等核心概念之间关系的层级图解。</div>
+                    <div class="open">打开 →</div>
+                </a>
+            </div>
+        </section>
+
+        <footer>
+            本目录为静态索引页，新增 HTML 后在此手动添加卡片即可。配色与组件遵循 <code>设计规范.md</code>。
+        </footer>
+    </div>
+</body>
+</html>
