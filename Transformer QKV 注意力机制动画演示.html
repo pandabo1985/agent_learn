@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer QKV 注意力机制动画演示</title>
+    <style>
+        /* ========== 设计系统：配色变量 ========== */
+        :root {
+            --bg: #f5f6fa;                    /* 页面背景 */
+            --sidebar-bg: #ffffff;             /* 侧边栏背景 */
+            --content-bg: #ffffff;             /* 卡片背景 */
+            --border: #e2e6ed;                 /* 边框、分割线 */
+            --text: #2c3e50;                   /* 正文主色 */
+            --text-muted: #7f8c9a;             /* 次要文字 */
+            --accent: #4f6ef7;                 /* 主强调色（蓝紫） */
+            --accent-light: #eef1fe;           /* 强调色浅底 */
+            --accent-hover: #3a56e0;           /* 强调色深版 */
+            --heading: #1a2540;                /* 标题深色 */
+            --code-bg: #f0f2f8;                /* 代码背景 */
+            --tag-bg: #e8ecfd;                 /* Chip 标签背景 */
+            --tag-text: #3a56e0;               /* Chip 标签文字 */
+            --shadow: 0 2px 12px rgba(79,110,247,0.07);
+        }
+
+        /* ========== 全局基础样式 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text);
+            background-color: var(--bg);
+            overflow-x: hidden;
+        }
+
+        /* ========== 双栏布局 ========== */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 240px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            padding: 32px 20px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            padding: 10px 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+            border-left: 3px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .nav-item:hover {
+            background-color: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .nav-item.active {
+            background-color: var(--accent-light);
+            color: var(--accent);
+            border-left-color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* 自定义滚动条 */
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* 内容区域 */
+        .main-content {
+            margin-left: 240px;
+            flex: 1;
+            padding: 48px 52px;
+            max-width: 1140px;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
+        /* ========== 排版规范 ========== */
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--heading);
+            margin-bottom: 24px;
+            line-height: 1.3;
+        }
+
+        h1 .accent {
+            color: var(--accent);
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--heading);
+            margin-top: 32px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            scroll-margin-top: 32px;
+        }
+
+        .sec-num {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 14px;
+        }
+
+        /* ========== 卡片组件 ========== */
+        .card {
+            background: var(--content-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin: 16px 0;
+            box-shadow: var(--shadow);
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: var(--heading);
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent);
+        }
+
+        /* ========== Callout 提示块 ========== */
+        .callout {
+            background: var(--accent-light);
+            border-left: 4px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 14px 16px;
+            margin: 16px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--accent);
+        }
+
+        /* ========== Chip 标签 ========== */
+        .chip {
+            display: inline-block;
+            background: var(--tag-bg);
+            color: var(--tag-text);
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* ========== 矩阵/向量展示 ========== */
+        .matrix-container {
+            display: flex;
+            gap: 24px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .vector-box {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            color: var(--text);
+            min-width: 200px;
+        }
+
+        .vector-label {
+            font-weight: 600;
+            color: var(--heading);
+            margin-bottom: 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .vector-value {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .vector-secondary {
+            color: var(--text-muted);
+        }
+
+        /* Q/K/V 颜色编码 */
+        .q-color { color: #e74c3c; }  /* 红色：Query */
+        .k-color { color: #3498db; }  /* 蓝色：Key */
+        .v-color { color: #f39c12; }  /* 黄色：Value */
+        .w-color { color: #9b59b6; }  /* 紫色：权重 */
+
+        /* ========== 步骤指示器 ========== */
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 32px 0;
+            flex-wrap: wrap;
+        }
+
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+            cursor: pointer;
+            transition: all 0.18s ease;
+            border: 2px solid var(--border);
+        }
+
+        .step-dot:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+        }
+
+        .step-dot.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        /* ========== 控制按钮 ========== */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 32px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            background: var(--content-bg);
+            color: var(--accent);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            font-family: inherit;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            color: var(--accent-hover);
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            color: var(--text-muted);
+        }
+
+        /* ========== 公式/内容块 ========== */
+        .formula {
+            background: var(--code-bg);
+            border-left: 4px solid var(--accent);
+            border-radius: 0 6px 6px 0;
+            padding: 12px 16px;
+            margin: 16px 0;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            color: var(--text);
+        }
+
+        /* ========== 响应式设计 ========== */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 24px 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.1rem;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .matrix-container {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .vector-box {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 容器：左侧栏 + 主内容 -->
+    <div class="container">
+        <!-- ========== 侧边栏导航 ========== -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">TRANSFORMER</div>
+            <nav class="sidebar-nav">
+                <div class="nav-item active" onclick="goToStep(0)">🎬 开始</div>
+                <div class="nav-item" onclick="goToStep(1)">1️⃣ 投影 QKV</div>
+                <div class="nav-item" onclick="goToStep(2)">2️⃣ 聚焦位置</div>
+                <div class="nav-item" onclick="goToStep(3)">3️⃣ 计算分数</div>
+                <div class="nav-item" onclick="goToStep(4)">4️⃣ Softmax 权重</div>
+                <div class="nav-item" onclick="goToStep(5)">5️⃣ Value 矩阵</div>
+                <div class="nav-item" onclick="goToStep(6)">6️⃣ 求和输出</div>
+                <div class="nav-item" onclick="goToStep(7)">✅ 完整总结</div>
+            </nav>
+        </aside>
+
+        <!-- ========== 主内容区域 ========== -->
+        <main class="main-content">
+            <h1>Transformer <span class="accent">QKV</span> 注意力机制动画演示</h1>
+            <p style="color: var(--text-muted); margin-bottom: 32px; font-size: 14px;">用向量化的方式逐步讲解「I love you」中的注意力计算过程</p>
+
+            <!-- 演示内容区 -->
+            <div class="card" id="content-area"></div>
+
+            <!-- 步骤指示器 -->
+            <div class="step-indicator" id="step-dots"></div>
+
+            <!-- 控制按钮 -->
+            <div class="controls">
+                <button id="prev-btn" onclick="previousStep()">⬅️ 上一步</button>
+                <button id="play-btn" onclick="toggleAutoPlay()">▶️ 自动演示</button>
+                <button id="next-btn" onclick="nextStep()">下一步 ⏭️</button>
+                <button onclick="resetDemo()">🔄 重置</button>
+            </div>
+
+            <!-- 详细说明 -->
+            <div style="margin-top: 48px;">
+                <h2><div class="sec-num">ℹ️</div>核心概念回顾</h2>
+                <div class="callout">
+                    <strong>🔴 Q (Query)</strong>：位置 t 的「需求」| 
+                    <strong>🔵 K (Key)</strong>：位置 s 的「线索」| 
+                    <strong>🟡 V (Value)</strong>：位置 s 的「内容」
+                </div>
+
+                <h2><div class="sec-num">🎯</div>计算流程</h2>
+                <p>注意力本质上是三个步骤：</p>
+                <div class="card" style="margin: 16px 0;">
+                    <div style="font-family: 'SFMono-Regular', Consolas, monospace; line-height: 2; font-size: 13px;">
+                        <span class="q-color">step 1:</span> score = Q·K / √d_k  <span class="vector-secondary">/* 计算相似度 */</span><br>
+                        <span class="w-color">step 2:</span> α = softmax(score)     <span class="vector-secondary">/* 转成权重 */</span><br>
+                        <span class="v-color">step 3:</span> output = α·V          <span class="vector-secondary">/* 加权求和 */</span>
+                    </div>
+                </div>
+
+                <h2><div class="sec-num">📝</div>为什么要分三套权重矩阵？</h2>
+                <div class="callout">
+                    用 <strong>同一套投影空间</strong> 会导致「相似度度量」和「内容取值」冲突。<br>
+                    三套矩阵 <strong>W_Q, W_K, W_V</strong> 让模型分别优化「匹配能力」和「表示能力」，大幅提升效率和准确率。
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========== JavaScript 逻辑 ========== -->
+    <script>
+        /* ========== 核心数据结构与配置 ========== */
+        
+        /**
+         * 演示步骤定义
+         * 每步包含：标题、描述、向量数据、公式等
+         */
+        const steps = [
+            {
+                title: "🎬 开始：输入序列",
+                description: "首先定义输入序列『I love you』，转换为嵌入向量。每个 token 的隐藏表示维度 d=4（简化演示）。",
+                content: `
+                    <div class="card-title">输入：词嵌入后的向量矩阵 X</div>
+                    <p>序列长度 T=3，隐藏维度 d_model=4：</p>
+                    <div class="matrix-container">
+                        <div class="vector-box">
+                            <div class="vector-label">X[I]</div>
+                            <div>[0.1, 0.2, 0.3, 0.4]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label">X[love]</div>
+                            <div>[0.2, 0.3, 0.5, 0.1]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label">X[you]</div>
+                            <div>[0.3, 0.1, 0.2, 0.4]</div>
+                        </div>
+                    </div>
+                    <div class="callout">这些都是「预训练的词向量」，代表每个词的初始语义信息。</div>
+                `
+            },
+            {
+                title: "1️⃣ 投影：生成 Q, K, V",
+                description: "将每个嵌入向量通过三个不同的可学习矩阵 W_Q, W_K, W_V 投影，得到 Query、Key、Value 向量。",
+                content: `
+                    <div class="card-title">训练好的投影矩阵 W_Q、W_K（数值保留三位小数；W_V 见第 5 步）</div>
+                    <div class="matrix-container">
+                        <div class="vector-box">
+                            <div class="vector-label">W_Q (4×4)</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">
+[ 0.134  0.864 -0.059  0.670]<br>
+[ 0.501  0.201  0.369  0.069]<br>
+[ 0.767  0.526  0.513  0.272]<br>
+[ 0.390  0.039  0.445  0.094]
+                            </div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label">W_K (4×4)</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">
+[ 1.238  0.954  1.264  0.844]<br>
+[-0.321 -0.126 -0.311 -0.197]<br>
+[-0.203  0.034 -0.161 -0.114]<br>
+[ 0.503  0.299  0.210  0.473]
+                            </div>
+                        </div>
+                    </div>
+                    <p style="margin-top: 16px;"><strong>Q = X · W_Q</strong>（Query 矩阵，结果保留两位小数）</p>
+                    <div class="matrix-container">
+                        <div class="vector-box">
+                            <div class="vector-label q-color">Q[I]</div>
+                            <div class="q-color">[0.50, 0.30, 0.40, 0.20]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label q-color">Q[love]</div>
+                            <div class="q-color">[0.60, 0.50, 0.40, 0.30]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label q-color">Q[you]</div>
+                            <div class="q-color">[0.40, 0.40, 0.30, 0.30]</div>
+                        </div>
+                    </div>
+                    <div class="callout">关键点：<strong>Q/K/V 不是原始数据</strong>，而是通过训练学出的 W 矩阵投影后得到的新向量（X·W_Q 与所示 Q 在四舍五入误差内一致）。这样分解的原因是「相似度度量空间」和「内容表示空间」可以独立优化。</div>
+                `
+            },
+            {
+                title: "2️⃣ 聚焦位置：计算 \"love\" 的注意力",
+                description: "现在以『love』位置（t=1）为目标，计算它对其他所有位置的注意力权重。",
+                content: `
+                    <div class="card-title">目标位置：love（下标 t=1）</div>
+                    <p>我们要为『love』位置生成上下文感知的表示。首先看它的 Query：</p>
+                    <div class="matrix-container">
+                        <div class="vector-box">
+                            <div class="vector-label q-color">Q[love]</div>
+                            <div class="q-color">[0.60, 0.50, 0.40, 0.30]</div>
+                        </div>
+                    </div>
+                    <p style="margin-top: 16px;"><strong>Key 矩阵 K = X · W_K</strong>（所有位置的线索）</p>
+                    <div class="matrix-container">
+                        <div class="vector-box">
+                            <div class="vector-label k-color">K[I]</div>
+                            <div class="k-color">[0.20, 0.20, 0.10, 0.20]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label k-color">K[love]</div>
+                            <div class="k-color">[0.10, 0.20, 0.10, 0.10]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label k-color">K[you]</div>
+                            <div class="k-color">[0.50, 0.40, 0.40, 0.40]</div>
+                        </div>
+                    </div>
+                    <div class="callout">现在有了 Q[love] 和所有 K，下一步就是用「点积」计算「相似度」。</div>
+                `
+            },
+            {
+                title: "3️⃣ 点积：计算相似度分数",
+                description: "用 Query 向量与所有 Key 向量做点积，计算「love 对每个位置的需求匹配度」。",
+                content: `
+                    <div class="card-title">点积相似度计算</div>
+                    <p><strong>score(love, position) = Q[love] · K[position] / √d_k</strong></p>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">（√d_k = √4 = 2，用来稳定梯度。下面展开『love → you』这一组的计算——它最终关注最强。）</p>
+                    
+                    <div style="background: var(--code-bg); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13px;">
+                        <div><span class="q-color">Q[love]</span> = [0.60, 0.50, 0.40, 0.30]</div>
+                        <div style="margin-top: 8px;"><span class="k-color">K[you]</span> = [0.50, 0.40, 0.40, 0.40]</div>
+                        <div style="color: var(--text-muted); margin-top: 4px;">点积 = 0.60×0.50 + 0.50×0.40 + 0.40×0.40 + 0.30×0.40</div>
+                        <div style="color: var(--text-muted);">= 0.300 + 0.200 + 0.160 + 0.120 = <span class="w-color">0.780</span></div>
+                        <div style="color: var(--text-muted); margin-top: 4px;">缩放 = 0.780 / 2 = <span class="w-color">0.390</span></div>
+                    </div>
+
+                    <p style="margin-top: 16px;">对所有位置执行此计算：</p>
+                    <div class="matrix-container">
+                        <div class="vector-box">
+                            <div class="vector-label w-color">score[love,I]</div>
+                            <div class="w-color">0.160</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label w-color">score[love,love]</div>
+                            <div class="w-color">0.115</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label w-color">score[love,you]</div>
+                            <div class="w-color">0.390</div>
+                        </div>
+                    </div>
+                    <div class="callout">注意：<strong>score[love,you]</strong> 最大（0.390），远高于另外两组（0.160 与 0.115），说明『love』认为『you』最匹配它的「需求」。</div>
+                `
+            },
+            {
+                title: "4️⃣ Softmax：转成概率权重",
+                description: "用 softmax 函数将分数转换为 [0,1] 区间的归一化权重，和为 1。",
+                content: `
+                    <div class="card-title">Softmax 归一化</div>
+                    <p><strong>α_t,s = softmax(score) = exp(score_s) / Σ exp(score_i)</strong></p>
+                    
+                    <div style="background: var(--code-bg); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13px;">
+                        <div>score = [0.160, 0.115, 0.390]</div>
+                        <div style="margin-top: 8px;">exp(score) ≈ [1.1735, 1.1219, 1.4770]</div>
+                        <div style="color: var(--text-muted); margin-top: 4px;">sum(exp) ≈ 3.7724</div>
+                        <div style="margin-top: 8px; color: var(--accent);"><strong>权重 α：</strong></div>
+                        <div style="color: var(--accent);">α[I]    = 1.1735 / 3.7724 = <strong>0.311</strong> (31.1%)</div>
+                        <div style="color: var(--accent);">α[love] = 1.1219 / 3.7724 = <strong>0.297</strong> (29.7%)</div>
+                        <div style="color: var(--accent);">α[you]  = 1.4770 / 3.7724 = <strong>0.392</strong> (39.2%)</div>
+                    </div>
+                    
+                    <p style="margin-top: 16px;"><strong>权重分布（柱状图模拟）</strong></p>
+                    <div style="display: flex; align-items: flex-end; gap: 12px; height: 80px; margin: 16px 0;">
+                        <div style="flex: 1; background: var(--accent-light); border: 1px solid var(--accent); border-radius: 4px; height: 55%; display: flex; align-items: flex-end; justify-content: center; font-size: 12px; font-weight: 600; color: var(--accent);">31.1%<br><span style="font-size: 10px; margin-top: 4px;">I</span></div>
+                        <div style="flex: 1; background: var(--accent-light); border: 1px solid var(--accent); border-radius: 4px; height: 53%; display: flex; align-items: flex-end; justify-content: center; font-size: 12px; font-weight: 600; color: var(--accent);">29.7%<br><span style="font-size: 10px; margin-top: 4px;">love</span></div>
+                        <div style="flex: 1; background: var(--accent-light); border: 1px solid var(--accent); border-radius: 4px; height: 70%; display: flex; align-items: flex-end; justify-content: center; font-size: 12px; font-weight: 600; color: var(--accent);">39.2%<br><span style="font-size: 10px; margin-top: 4px;">you</span></div>
+                    </div>
+                    
+                    <div class="callout">权重现在都在 [0,1]，和为 1。这三个权重决定了最后输出里「I、love、you」各占多少比例。</div>
+                `
+            },
+            {
+                title: "5️⃣ 内容提取：Value 矩阵",
+                description: "现在权重已经确定，下一步是取出所有位置的『Value』向量，准备用权重加权。",
+                content: `
+                    <div class="card-title">Value 矩阵 V = X · W_V</div>
+                    <p>W_V 是第三个可学习的投影矩阵（数值保留三位小数），用来提取「真正要被聚合的内容」：</p>
+                    <div class="matrix-container">
+                        <div class="vector-box">
+                            <div class="vector-label">W_V (4×4)</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">
+[ 0.361  0.670  0.277  0.535]<br>
+[ 0.255  0.069  0.193 -0.011]<br>
+[ 0.467  0.272  0.361  0.080]<br>
+[ 0.183  0.094  0.064  0.562]
+                            </div>
+                        </div>
+                    </div>
+                    <p style="margin-top: 16px;"><strong>V = X · W_V</strong>（结果保留两位小数）：</p>
+                    <div class="matrix-container">
+                        <div class="vector-box">
+                            <div class="vector-label v-color">V[I]</div>
+                            <div class="v-color">[0.30, 0.20, 0.20, 0.30]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label v-color">V[love]</div>
+                            <div class="v-color">[0.40, 0.30, 0.30, 0.20]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label v-color">V[you]</div>
+                            <div class="v-color">[0.30, 0.30, 0.20, 0.40]</div>
+                        </div>
+                    </div>
+                    
+                    <p style="margin-top: 16px;">现在我们有了：</p>
+                    <div class="callout">
+                        <strong>权重 α</strong> = [0.311, 0.297, 0.392]<br>
+                        <strong>内容 V</strong> = 3 个 4 维向量<br>
+                        下一步就是「权重 × 内容」的加权求和
+                    </div>
+                `
+            },
+            {
+                title: "6️⃣ 加权求和：最终输出",
+                description: "用权重对 Value 向量逐元素加权求和，得到『love』位置的最终上下文表示。",
+                content: `
+                    <div class="card-title">注意力输出计算</div>
+                    <p><strong>output[love] = Σ α_i · V_i</strong></p>
+                    
+                    <div style="background: var(--code-bg); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; line-height: 1.8;">
+                        <div>output[love] = <span class="w-color">0.311</span> × <span class="v-color">V[I]</span></div>
+                        <div style="margin-left: 48px; color: var(--text-muted);">= 0.311 × [0.30, 0.20, 0.20, 0.30]</div>
+                        <div style="margin-left: 48px; color: var(--text-muted);">= [0.093, 0.062, 0.062, 0.093]</div>
+
+                        <div style="margin-top: 12px;">+ <span class="w-color">0.297</span> × <span class="v-color">V[love]</span></div>
+                        <div style="margin-left: 48px; color: var(--text-muted);">= 0.297 × [0.40, 0.30, 0.30, 0.20]</div>
+                        <div style="margin-left: 48px; color: var(--text-muted);">= [0.119, 0.089, 0.089, 0.059]</div>
+
+                        <div style="margin-top: 12px;">+ <span class="w-color">0.392</span> × <span class="v-color">V[you]</span></div>
+                        <div style="margin-left: 48px; color: var(--text-muted);">= 0.392 × [0.30, 0.30, 0.20, 0.40]</div>
+                        <div style="margin-left: 48px; color: var(--text-muted);">= [0.118, 0.118, 0.078, 0.157]</div>
+
+                        <div style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px;">
+                        <strong class="w-color">最终</strong> output[love] = 三项相加
+                        </div>
+                        <div style="color: var(--accent); font-weight: 600; margin-top: 8px;">[0.330, 0.269, 0.229, 0.309]</div>
+                    </div>
+                    
+                    <p style="margin-top: 16px;">💡 <strong>含义解读</strong>：</p>
+                    <div class="callout">
+                        这个新向量 <strong>[0.330, 0.269, 0.229, 0.309]</strong> 是『love』位置的「上下文感知表示」。<br>
+                        它融合了主语『I』(31.1%)、自身『love』(29.7%)、宾语『you』(39.2%) 三个位置的语义——其中『you』占比最高，符合「动词 love 最关注宾语 you」的语言直觉。
+                    </div>
+                `
+            },
+            {
+                title: "✅ 完整总结",
+                description: "回顾整个 Transformer 注意力机制的完整流程。",
+                content: `
+                    <div class="card-title">缩放点积注意力的完整公式</div>
+                    <div style="background: var(--code-bg); border-radius: 8px; padding: 16px; margin-bottom: 16px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13px;">
+                        <div style="margin-bottom: 12px;"><strong style="color: var(--accent);">Attention(Q, K, V) = softmax(QK<sup>T</sup> / √d_k) V</strong></div>
+                        <div style="color: var(--text-muted);">① <span class="q-color">Q = XW_Q</span>     // Query 投影</div>
+                        <div style="color: var(--text-muted);">② <span class="k-color">K = XW_K</span>     // Key 投影</div>
+                        <div style="color: var(--text-muted);">③ <span class="v-color">V = XW_V</span>     // Value 投影</div>
+                        <div style="color: var(--text-muted);">④ <span class="w-color">score = QK<sup>T</sup> / √d_k</span>  // 相似度（点积）</div>
+                        <div style="color: var(--text-muted);">⑤ <span class="w-color">α = softmax(score)</span> // 权重（概率）</div>
+                        <div style="color: var(--text-muted);">⑥ output = αV     // 加权求和</div>
+                    </div>
+
+                    <h2><div class="sec-num">🎯</div>三个权重矩阵 W_Q, W_K, W_V 的作用</h2>
+                    <div class="callout">
+                        <strong>为什么要分三套投影？</strong><br>
+                        如果用同一个投影空间，「相似度度量」和「内容表示」会互相制约，降低模型表达能力。<br>
+                        分开投影让每个目标独立优化，大幅提升 Transformer 的效率和准确率。
+                    </div>
+
+                    <h2><div class="sec-num">🗺️</div>全貌：完整的 3×3 注意力矩阵</h2>
+                    <p>前面只演示了「love 作为 Query」这一条线。把三个位置都当 Query 跑一遍，就得到完整的 3×3 注意力权重矩阵（<strong>行 = Query（谁在看），列 = Key（被看的对象）</strong>，颜色越深权重越大）：</p>
+                    <div style="overflow-x: auto; margin: 16px 0;">
+                        <table style="border-collapse: separate; border-spacing: 5px; font-size: 13px; margin: 0 auto;">
+                            <thead>
+                                <tr>
+                                    <th style="color: var(--text-muted); padding: 8px 12px; text-align: center;">Query ＼ Key</th>
+                                    <th style="color: var(--k-color); padding: 8px 14px;">→ K[I]</th>
+                                    <th style="color: var(--k-color); padding: 8px 14px;">→ K[love]</th>
+                                    <th style="color: var(--k-color); padding: 8px 14px;">→ K[you]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th style="color: var(--q-color); padding: 8px 12px;">Q[I]</th>
+                                    <td style="background: rgba(79,110,247,0.18); padding: 10px 16px; border-radius: 6px; text-align: center;">31.6%</td>
+                                    <td style="background: rgba(79,110,247,0.12); padding: 10px 16px; border-radius: 6px; text-align: center;">30.5%</td>
+                                    <td style="background: rgba(79,110,247,0.50); padding: 10px 16px; border-radius: 6px; text-align: center; font-weight: 700; color: var(--accent-hover);">38.0%</td>
+                                </tr>
+                                <tr>
+                                    <th style="color: var(--q-color); padding: 8px 12px;">Q[love]</th>
+                                    <td style="background: rgba(79,110,247,0.15); padding: 10px 16px; border-radius: 6px; text-align: center;">31.1%</td>
+                                    <td style="background: rgba(79,110,247,0.09); padding: 10px 16px; border-radius: 6px; text-align: center;">29.7%</td>
+                                    <td style="background: rgba(79,110,247,0.56); padding: 10px 16px; border-radius: 6px; text-align: center; font-weight: 700; color: var(--accent-hover);">39.2%</td>
+                                </tr>
+                                <tr>
+                                    <th style="color: var(--q-color); padding: 8px 12px;">Q[you]</th>
+                                    <td style="background: rgba(79,110,247,0.18); padding: 10px 16px; border-radius: 6px; text-align: center;">31.7%</td>
+                                    <td style="background: rgba(79,110,247,0.13); padding: 10px 16px; border-radius: 6px; text-align: center;">30.6%</td>
+                                    <td style="background: rgba(79,110,247,0.48); padding: 10px 16px; border-radius: 6px; text-align: center; font-weight: 700; color: var(--accent-hover);">37.7%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="margin-top: 16px;">把每一行的权重对 V 加权求和，就得到三个位置各自的「上下文输出」，可以横向对比：</p>
+                    <div class="matrix-container">
+                        <div class="vector-box">
+                            <div class="vector-label q-color">output[I]</div>
+                            <div>[0.331, 0.269, 0.231, 0.308]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label q-color">output[love]</div>
+                            <div>[0.330, 0.269, 0.229, 0.309]</div>
+                        </div>
+                        <div class="vector-box">
+                            <div class="vector-label q-color">output[you]</div>
+                            <div>[0.330, 0.268, 0.230, 0.307]</div>
+                        </div>
+                    </div>
+                    <div class="callout">
+                        <strong>一个有意思的现象：</strong>三行权重都<strong>在『you』这一列达到最大</strong>，三个 output 也几乎一模一样（≈ [0.33, 0.27, 0.23, 0.31]）。<br>
+                        原因是 <strong>K[you] 的模长最大</strong>（|K[you]|≈0.85，远大于 |K[I]|≈0.36、|K[love]|≈0.26），任何 Query 和它做点积都偏大——『you』成了整句的「<strong>注意力汇聚点（attention sink）</strong>」。<br>
+                        这也说明：单头 + 某个 Key 占优时，不同位置的输出会趋同；真实 Transformer 靠<strong>多头注意力 + 位置编码 + 充分训练</strong>，才能让不同位置关注到不同的地方。
+                    </div>
+
+                    <h2><div class="sec-num">🔄</div>多头注意力</h2>
+                    <p>实际 Transformer 会并行计算多个「头」（比如 8 头或 16 头），每个头有自己的 W_Q/W_K/W_V。不同头学到不同的「对齐规则」：</p>
+                    <ul style="margin-left: 24px; margin-top: 12px;">
+                        <li>某些头可能关注「句法依存」</li>
+                        <li>某些头可能关注「指代关系」</li>
+                        <li>某些头可能关注「词汇相似性」</li>
+                        <li style="margin-bottom: 12px;">etc.</li>
+                    </ul>
+                    <p>最后把所有头的输出拼接再线性融合，得到最终的注意力输出。</p>
+
+                    <h2><div class="sec-num">📍</div>位置编码：注意力本身「没有顺序感」</h2>
+                    <div class="callout">
+                        本页为了聚焦 QKV，省略了一个关键组件——<strong>位置编码（Positional Encoding）</strong>。<br>
+                        纯粹的自注意力是「置换等变」的：在没有任何位置信息时，『I love you』和『you love I』算出的注意力几乎一样。<br>
+                        所以真实 Transformer 会把「位置编码」叠加到 embedding 上，让每个 token 带上「我在第几位」的信息，模型才能分辨语序。
+                    </div>
+
+                    <h2><div class="sec-num">📚</div>从『I love you』看注意力</h2>
+                    <p style="margin-bottom: 12px;">在我们的例子里，『love』的注意力是 <strong>[31.1%, 29.7%, 39.2%]</strong>，对宾语『you』关注最高。在更复杂的真实句子里，注意力的分布往往更悬殊：</p>
+                    <div style="background: var(--accent-light); border-left: 4px solid var(--accent); border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 12px 0;">
+                        <strong style="color: var(--accent);">「我爱你」</strong>  
+                        → 『爱』应该强调关注「我」（主语）和「你」（宾语），权重可能是 [40%, 10%, 50%]
+                    </div>
+                    
+                    <div style="background: var(--accent-light); border-left: 4px solid var(--accent); border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 12px 0;">
+                        <strong style="color: var(--accent);">「小明说他赢了」</strong>
+                        → 『他』最关注『小明』（指代消解），权重可能是 [60%, 5%, 25%, 10%]
+                    </div>
+
+                    <h2><div class="sec-num">💡</div>核心洞察</h2>
+                    <div class="callout">
+                        注意力机制的本质是：<br>
+                        ① 每个位置用自己的 <strong>Query</strong> 表达「我需要什么」<br>
+                        ② 其他位置用 <strong>Key</strong> 告诉「我能匹配什么」<br>
+                        ③ 基于匹配度，其他位置的 <strong>Value</strong> 被选中、加权聚合<br>
+                        ④ 最终得到融合了上下文的新表示<br>
+                        <br>
+                        这就是为什么 Transformer 能理解「上下文」！
+                    </div>
+                `
+            }
+        ];
+
+        /* ========== 全局状态 ========== */
+        let currentStep = 0;           // 当前步数
+        let isAutoPlaying = false;     // 自动播放中？
+        let autoPlayInterval = null;   // 自动播放计时器
+
+        /**
+         * 初始化：渲染第一步、设置导航点
+         */
+        function initDemo() {
+            renderStep(0);
+            updateNavigation();
+        }
+
+        /**
+         * 渲染当前步骤的内容
+         * @param {number} stepIndex - 步骤索引
+         */
+        function renderStep(stepIndex) {
+            const step = steps[stepIndex];
+            const contentArea = document.getElementById('content-area');
+            
+            contentArea.innerHTML = `
+                <div class="card-title">${step.title}</div>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">${step.description}</p>
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;">
+                ${step.content}
+            `;
+        }
+
+        /**
+         * 更新导航状态（按钮禁用、步骤点亮）
+         */
+        function updateNavigation() {
+            // 更新按钮禁用状态
+            document.getElementById('prev-btn').disabled = (currentStep === 0);
+            document.getElementById('next-btn').disabled = (currentStep === steps.length - 1);
+            
+            // 更新侧边栏导航激活状态
+            document.querySelectorAll('.nav-item').forEach((item, idx) => {
+                item.classList.toggle('active', idx === currentStep);
+            });
+            
+            // 更新步骤指示点
+            updateStepDots();
+        }
+
+        /**
+         * 更新步骤指示点样式
+         */
+        function updateStepDots() {
+            const dotsContainer = document.getElementById('step-dots');
+            dotsContainer.innerHTML = '';
+            
+            for (let i = 0; i < steps.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = `step-dot ${i === currentStep ? 'active' : ''}`;
+                dot.onclick = () => goToStep(i);
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        /**
+         * 滚动内容区到顶部
+         */
+        function scrollToTop() {
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.scrollTop = 0;
+            }
+        }
+
+        /**
+         * 前进到下一步
+         */
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                renderStep(currentStep);
+                updateNavigation();
+                scrollToTop();
+            }
+        }
+
+        /**
+         * 回退到上一步
+         */
+        function previousStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                renderStep(currentStep);
+                updateNavigation();
+                scrollToTop();
+            }
+        }
+
+        /**
+         * 直接跳转到某一步
+         * @param {number} stepIndex - 目标步数
+         */
+        function goToStep(stepIndex) {
+            if (stepIndex >= 0 && stepIndex < steps.length) {
+                currentStep = stepIndex;
+                renderStep(currentStep);
+                updateNavigation();
+                scrollToTop();
+                // 如果正在自动播放，暂停
+                if (isAutoPlaying) {
+                    toggleAutoPlay();
+                }
+            }
+        }
+
+        /**
+         * 自动播放开关
+         */
+        function toggleAutoPlay() {
+            const playBtn = document.getElementById('play-btn');
+            
+            if (isAutoPlaying) {
+                // 关闭自动播放
+                clearInterval(autoPlayInterval);
+                isAutoPlaying = false;
+                playBtn.textContent = '▶️ 自动演示';
+            } else {
+                // 开启自动播放
+                isAutoPlaying = true;
+                playBtn.textContent = '⏸️ 暂停';
+                
+                autoPlayInterval = setInterval(() => {
+                    if (currentStep < steps.length - 1) {
+                        nextStep();
+                    } else {
+                        // 到达末尾，关闭自动播放
+                        clearInterval(autoPlayInterval);
+                        isAutoPlaying = false;
+                        playBtn.textContent = '▶️ 自动演示';
+                    }
+                }, 2500);  // 2.5 秒间隔
+            }
+        }
+
+        /**
+         * 重置演示：回到第一步
+         */
+        function resetDemo() {
+            if (isAutoPlaying) {
+                toggleAutoPlay();
+            }
+            goToStep(0);
+        }
+
+        /* ========== 页面加载时初始化 ========== */
+        document.addEventListener('DOMContentLoaded', initDemo);
+    </script>
+<script>window.parent.postMessage({ action: "ready" }, "*"); 
+ 
+window.console = new Proxy(console, {
+  get(target, prop) {
+    if (['log', 'warn', 'error'].includes(prop)) {
+      return new Proxy(target[prop], {
+        apply(fn, thisArg, args) {
+          fn.apply(thisArg, args);
+          window.parent.postMessage({ action: 'console', 
+            type: prop, 
+            args: args.map((arg) => {
+              try {
+                return JSON.stringify(arg).replace(/^["']|["']$/g, '');
+              } catch (e) {
+                return arg;
+              }
+            }) 
+          }, '*');
+        }
+      });
+    }
+    return target[prop];
+  }
+});
+</script></body>
+</html>
